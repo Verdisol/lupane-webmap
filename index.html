@@ -1,0 +1,407 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lupane District – Farming Expansion & Wildlife Monitor</title>
+    
+    <!-- Leaflet CSS + JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- Leaflet GeoTIFF plugin -->
+    <script src="https://unpkg.com/leaflet-geotiff@2.0.2/leaflet-geotiff.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        /* Main map fills the whole screen */
+        #map {
+            height: 100vh;
+            width: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+        
+        /* ========== HEADER (TOP CENTER) ========== */
+        .header {
+            position: absolute;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 40px;
+            font-size: 16px;
+            font-weight: bold;
+            backdrop-filter: blur(5px);
+            pointer-events: none;
+            white-space: nowrap;
+            font-family: 'Segoe UI', sans-serif;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+        
+        /* ========== LEGEND PANEL (BOTTOM LEFT) ========== */
+        .legend {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            z-index: 1000;
+            background: rgba(0,0,0,0.85);
+            color: white;
+            padding: 12px 15px;
+            border-radius: 10px;
+            font-size: 12px;
+            backdrop-filter: blur(5px);
+            pointer-events: none;
+            min-width: 180px;
+            font-family: monospace;
+            border-left: 4px solid #f9a825;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+        
+        .legend h4 {
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .legend span {
+            display: inline-block;
+            width: 24px;
+            height: 18px;
+            margin-right: 10px;
+            vertical-align: middle;
+            border-radius: 3px;
+        }
+        
+        .legend p {
+            margin: 6px 0;
+            line-height: 1.4;
+        }
+        
+        /* ========== LAYER CONTROL PANEL (TOP RIGHT) ========== */
+        .layer-control {
+            position: absolute;
+            top: 80px;
+            right: 20px;
+            z-index: 1000;
+            background: white;
+            padding: 12px;
+            border-radius: 10px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.25);
+            min-width: 170px;
+            max-height: 80vh;
+            overflow-y: auto;
+            font-family: 'Segoe UI', sans-serif;
+        }
+        
+        .layer-control h4 {
+            margin: 0 0 8px 0;
+            text-align: center;
+            color: #2c3e50;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+        }
+        
+        .layer-control button {
+            display: block;
+            width: 100%;
+            margin: 6px 0;
+            padding: 8px;
+            background: #2c3e50;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s ease;
+        }
+        
+        .layer-control button:hover {
+            background: #1abc9c;
+            transform: scale(1.02);
+        }
+        
+        .layer-control button.active {
+            background: #e67e22;
+        }
+        
+        .layer-control hr {
+            margin: 12px 0;
+            border: 0;
+            height: 1px;
+            background: #ddd;
+        }
+        
+        .section-title {
+            font-size: 11px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin: 8px 0 4px 0;
+            text-align: center;
+        }
+        
+        /* ========== FOOTER / CREDITS (BOTTOM RIGHT) ========== */
+        .footer {
+            position: absolute;
+            bottom: 10px;
+            right: 15px;
+            z-index: 1000;
+            background: rgba(0,0,0,0.6);
+            color: #ccc;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 10px;
+            pointer-events: none;
+            font-family: monospace;
+        }
+        
+        /* Mobile responsive */
+        @media (max-width: 700px) {
+            .header { font-size: 11px; padding: 6px 12px; white-space: nowrap; top: 10px; }
+            .legend { font-size: 9px; min-width: 140px; padding: 8px 10px; bottom: 10px; left: 10px; }
+            .legend span { width: 18px; height: 14px; margin-right: 6px; }
+            .layer-control { top: 70px; right: 10px; min-width: 140px; padding: 8px; max-height: 70vh; }
+            .layer-control button { font-size: 10px; padding: 5px; }
+            .footer { font-size: 8px; bottom: 5px; right: 8px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- HEADER -->
+    <div class="header">
+        🐘 Lupane District, Zimbabwe | Farming Expansion & Wildlife Monitor
+    </div>
+
+    <!-- LEGEND (BOTTOM LEFT) -->
+    <div class="legend">
+        <h4>📖 Legend</h4>
+        <div id="legend-content">
+            <p><span style="background: #f9a825;"></span> 🌾 Farmland / Cropland</p>
+            <p><span style="background: #2e7d32;"></span> 🌲 Forest / Woodland</p>
+            <p><span style="background: #8bc34a;"></span> 🌿 Grassland</p>
+            <p><span style="background: #1565c0;"></span> 💧 Water</p>
+            <p><span style="background: #c62828;"></span> 🏙️ Urban / Built‑up</p>
+            <p><span style="background: #757575;"></span> 🪨 Bare ground / No data</p>
+        </div>
+    </div>
+
+    <!-- LAYER CONTROL PANEL (TOP RIGHT) -->
+    <div class="layer-control">
+        <h4>🗂️ Map Layers</h4>
+        <div class="section-title">LAND USE / LAND COVER</div>
+        <button id="btn_lulc2010">🌾 2010</button>
+        <button id="btn_lulc2015">🌾 2015</button>
+        <button id="btn_lulc2020">🌾 2020</button>
+        <button id="btn_lulc2026">🌾 2026</button>
+        <hr>
+        <div class="section-title">CHANGE DETECTION</div>
+        <button id="btn_change2015">📈 2010 → 2015</button>
+        <button id="btn_change2020">📈 2010 → 2020</button>
+        <button id="btn_change2026">📈 2010 → 2026</button>
+    </div>
+
+    <!-- FOOTER / CREDITS -->
+    <div class="footer">
+        Data: Sentinel‑2, Landsat | Analysis: Google Earth Engine | Map: Leaflet
+    </div>
+
+    <div id="map"></div>
+
+    <script>
+        // ============================================================
+        // 1. INITIALISE MAP
+        // ============================================================
+        var map = L.map('map').setView([-18.92, 27.55], 11);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // Lupane District boundary (approximate – replace with your actual GeoJSON if needed)
+        var boundary = L.polygon([
+            [27.40, -18.80], [27.65, -18.80], [27.70, -18.90],
+            [27.65, -19.05], [27.40, -19.05], [27.35, -18.95], [27.40, -18.80]
+        ], {color: "black", weight: 3, fillOpacity: 0, dashArray: "5,5"}).addTo(map);
+        boundary.bindPopup("<b>Lupane District</b><br>Administrative boundary");
+
+        // Fit map to boundary
+        map.fitBounds([[-19.05, 27.35], [-18.80, 27.70]]);
+
+        // ============================================================
+        // 2. FILE NAMES (UPDATE THESE TO MATCH YOUR GeoTIFF FILES)
+        // ============================================================
+        var files = {
+            lulc2010: 'data/LULC_2010.tif',
+            lulc2015: 'data/LULC_2015.tif',
+            lulc2020: 'data/LULC_2020.tif',
+            lulc2026: 'data/LULC_2026.tif',
+            change2015: 'data/CHANGE_2010_2015.tif',
+            change2020: 'data/CHANGE_2010_2020.tif',
+            change2026: 'data/CHANGE_2010_2026.tif'
+        };
+
+        var currentLayer = null;
+
+        // ============================================================
+        // 3. RENDER FUNCTIONS (LULC & CHANGE)
+        // ============================================================
+        
+        // Render LULC map (values 1-5)
+        function renderLULC(data, ctx, canvasWidth, canvasHeight) {
+            var w = data[0].length;
+            var h = data.length;
+            var imgData = ctx.getImageData(0, 0, canvasWidth, canvasHeight);
+            for (var i = 0; i < h; i++) {
+                for (var j = 0; j < w; j++) {
+                    var val = Math.round(data[i][j]);
+                    var r, g, b;
+                    if (val === 1) { r = 249; g = 168; b = 37; }      // Farmland
+                    else if (val === 2) { r = 46; g = 125; b = 50; }   // Forest
+                    else if (val === 3) { r = 139; g = 195; b = 74; }  // Grassland
+                    else if (val === 4) { r = 21; g = 101; b = 192; }  // Water
+                    else if (val === 5) { r = 198; g = 40; b = 40; }   // Urban
+                    else { r = 117; g = 117; b = 117; }                // Bare / No data
+                    var idx = (i * canvasWidth + j) * 4;
+                    imgData.data[idx] = r;
+                    imgData.data[idx+1] = g;
+                    imgData.data[idx+2] = b;
+                    imgData.data[idx+3] = 255;
+                }
+            }
+            ctx.putImageData(imgData, 0, 0);
+        }
+
+        // Render change detection map (values -1, 0, 1)
+        function renderChange(data, ctx, canvasWidth, canvasHeight) {
+            var w = data[0].length;
+            var h = data.length;
+            var imgData = ctx.getImageData(0, 0, canvasWidth, canvasHeight);
+            for (var i = 0; i < h; i++) {
+                for (var j = 0; j < w; j++) {
+                    var val = Math.round(data[i][j]);
+                    var r, g, b;
+                    if (val === -1) { r = 211; g = 47; b = 47; }      // Loss (red)
+                    else if (val === 0) { r = 240; g = 240; b = 240; } // No change (white)
+                    else if (val === 1) { r = 46; g = 125; b = 50; }   // Gain (green)
+                    else { r = 117; g = 117; b = 117; }                // No data (grey)
+                    var idx = (i * canvasWidth + j) * 4;
+                    imgData.data[idx] = r;
+                    imgData.data[idx+1] = g;
+                    imgData.data[idx+2] = b;
+                    imgData.data[idx+3] = 255;
+                }
+            }
+            ctx.putImageData(imgData, 0, 0);
+        }
+
+        // ============================================================
+        // 4. UPDATE LEGEND BASED ON LAYER TYPE
+        // ============================================================
+        function updateLegend(type) {
+            var legendDiv = document.getElementById('legend-content');
+            if (type === 'lulc') {
+                legendDiv.innerHTML = `
+                    <p><span style="background: #f9a825;"></span> 🌾 Farmland / Cropland</p>
+                    <p><span style="background: #2e7d32;"></span> 🌲 Forest / Woodland</p>
+                    <p><span style="background: #8bc34a;"></span> 🌿 Grassland</p>
+                    <p><span style="background: #1565c0;"></span> 💧 Water</p>
+                    <p><span style="background: #c62828;"></span> 🏙️ Urban / Built‑up</p>
+                    <p><span style="background: #757575;"></span> 🪨 Bare ground / No data</p>
+                `;
+            } else if (type === 'change') {
+                legendDiv.innerHTML = `
+                    <p><span style="background: #d32f2f;"></span> 🔴 Farmland loss (-1)</p>
+                    <p><span style="background: #f0f0f0; border:1px solid #888;"></span> ⚪ No change (0)</p>
+                    <p><span style="background: #2e7d32;"></span> 🟢 Farmland gain (+1)</p>
+                    <p><span style="background: #757575;"></span> ⚫ No data</p>
+                `;
+            }
+        }
+
+        // ============================================================
+        // 5. LOAD AND DISPLAY LAYER
+        // ============================================================
+        function loadLayer(url, type) {
+            if (currentLayer) {
+                map.removeLayer(currentLayer);
+            }
+            var renderFunc = (type === 'lulc') ? renderLULC : renderChange;
+            currentLayer = L.leafletGeotiff(url, {
+                renderer: L.leafletGeotiff.vectorTile({
+                    render: function(data, canvas, ctx) {
+                        renderFunc(data, ctx, canvas.width, canvas.height);
+                    },
+                    maxZoom: 18
+                })
+            }).addTo(map);
+            updateLegend(type);
+        }
+
+        // ============================================================
+        // 6. BUTTON EVENT HANDLERS (with active state)
+        // ============================================================
+        function setActiveButton(activeId) {
+            var btnIds = ['btn_lulc2010', 'btn_lulc2015', 'btn_lulc2020', 'btn_lulc2026',
+                          'btn_change2015', 'btn_change2020', 'btn_change2026'];
+            btnIds.forEach(function(id) {
+                var btn = document.getElementById(id);
+                if (btn) {
+                    if (id === activeId) btn.classList.add('active');
+                    else btn.classList.remove('active');
+                }
+            });
+        }
+
+        document.getElementById('btn_lulc2010').onclick = function() {
+            loadLayer(files.lulc2010, 'lulc');
+            setActiveButton('btn_lulc2010');
+        };
+        document.getElementById('btn_lulc2015').onclick = function() {
+            loadLayer(files.lulc2015, 'lulc');
+            setActiveButton('btn_lulc2015');
+        };
+        document.getElementById('btn_lulc2020').onclick = function() {
+            loadLayer(files.lulc2020, 'lulc');
+            setActiveButton('btn_lulc2020');
+        };
+        document.getElementById('btn_lulc2026').onclick = function() {
+            loadLayer(files.lulc2026, 'lulc');
+            setActiveButton('btn_lulc2026');
+        };
+        document.getElementById('btn_change2015').onclick = function() {
+            loadLayer(files.change2015, 'change');
+            setActiveButton('btn_change2015');
+        };
+        document.getElementById('btn_change2020').onclick = function() {
+            loadLayer(files.change2020, 'change');
+            setActiveButton('btn_change2020');
+        };
+        document.getElementById('btn_change2026').onclick = function() {
+            loadLayer(files.change2026, 'change');
+            setActiveButton('btn_change2026');
+        };
+
+        // ============================================================
+        // 7. DEFAULT LAYER (2010 LULC if file exists)
+        // ============================================================
+        // Uncomment the line below if you have the 2010 file
+        // loadLayer(files.lulc2010, 'lulc');
+        // setActiveButton('btn_lulc2010');
+    </script>
+</body>
+</html>
