@@ -13,7 +13,7 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', sans-serif; overflow: hidden; }
         
-        /* Login modal with background.jpg */
+        /* Login modal */
         .login-modal {
             position: fixed;
             top: 0;
@@ -74,7 +74,7 @@
         .map-container { display: none; height: 100vh; width: 100%; }
         #map { height: calc(100vh - 63px); width: 100%; }
 
-        /* Header 63px, green with brown strip */
+        /* Header 63px, green with brown strip, no emoji */
         .header {
             background: #2e7d32;
             color: white;
@@ -100,7 +100,7 @@
             position: relative;
             transition: 0.2s;
         }
-        /* Blinking big shadow effect for all interactive elements */
+        /* Blinking big shadow effect */
         .icon-btn:hover, .layer-control button:hover, .layer-control select:hover, .report-panel button:hover, #encroachBtn:hover, .login-box button:hover {
             animation: bigBlink 0.8s infinite;
         }
@@ -114,7 +114,7 @@
             color: white;
             border: none;
             padding: 6px 12px;
-            borderRadius: 20px;
+            border-radius: 20px;
             cursor: pointer;
         }
         /* Layer panel – greyish transparent, blinking border */
@@ -169,21 +169,31 @@
         }
         .legend span { display: inline-block; width: 18px; height: 18px; margin-right: 8px; vertical-align: middle; border-radius: 3px; }
 
-        /* Report panel – large, greyish, 85% transparent */
+        /* Report panel – draggable, greyish transparent */
         .report-panel {
             position: absolute;
-            bottom: 20px;
+            bottom: 80px;
             right: 20px;
-            background: rgba(100,100,100,0.85);
+            background: rgba(100,100,100,0.9);
             backdrop-filter: blur(8px);
             padding: 15px;
             border-radius: 12px;
             width: 340px;
-            z-index: 1000;
+            z-index: 1001;
             color: white;
             font-size: 13px;
             border: 1px solid #ccc;
             display: none;
+            cursor: move;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        .report-panel .panel-header {
+            cursor: move;
+            background: rgba(0,0,0,0.5);
+            margin: -15px -15px 10px -15px;
+            padding: 10px 15px;
+            border-radius: 12px 12px 0 0;
+            font-weight: bold;
         }
         .report-panel input, .report-panel select, .report-panel textarea {
             width: 100%;
@@ -207,17 +217,6 @@
             background: #555;
             margin-top: 10px;
         }
-        .notification-badge {
-            position: absolute;
-            top: -8px;
-            right: -12px;
-            background: red;
-            color: white;
-            border-radius: 50%;
-            padding: 2px 6px;
-            font-size: 10px;
-            font-weight: bold;
-        }
         .coord-row {
             display: flex;
             justify-content: space-between;
@@ -230,6 +229,17 @@
             background: #2c3e50;
         }
         .coord-row button:hover { background: #1abc9c; }
+        .notification-badge {
+            position: absolute;
+            top: -8px;
+            right: -12px;
+            background: red;
+            color: white;
+            border-radius: 50%;
+            padding: 2px 6px;
+            font-size: 10px;
+            font-weight: bold;
+        }
         @media (max-width: 700px) {
             .layer-control { min-width: 170px; right: 10px; top: 75px; }
             .report-panel { width: 280px; right: 10px; bottom: 10px; }
@@ -242,7 +252,7 @@
 <!-- LOGIN MODAL -->
 <div id="loginModal" class="login-modal">
     <div class="login-box">
-        <h2>🌾 LUPANE LAND USE & WILDLIFE MONITOR</h2>
+        <h2>LUPANE LAND USE & WILDLIFE MONITOR</h2>
         <div class="welcome-msg">Welcome back, please login with your credentials to access the web map.</div>
         <input type="text" id="username" placeholder="Username" autocomplete="off">
         <input type="password" id="password" placeholder="Password" autocomplete="off">
@@ -263,7 +273,7 @@
                 <option value="pt">Português</option><option value="fr">Français</option>
             </select>
         </div>
-        <div class="map-title" id="mapTitle">🌾 LUPANE LAND USE & WILDLIFE MONITOR</div>
+        <div class="map-title" id="mapTitle">LUPANE LAND USE & WILDLIFE MONITOR</div>
         <div style="width: 80px;"></div>
     </div>
     <div id="map"></div>
@@ -273,7 +283,7 @@
 
     <!-- Layer Control -->
     <div class="layer-control" id="layerControl">
-        <strong>🗺️ LAYERS</strong><hr>
+        <strong>LAYERS</strong><hr>
         <select id="lulcDropdown">
             <option value="">-- LAND USE LAND COVER --</option>
             <option value="2010">LAND USE LAND COVER 2010</option>
@@ -289,12 +299,12 @@
         <button id="waterLinesBtn">WATER LINES</button>
         <button id="roadsBtn">ROADS</button>
         <hr>
-        <button id="encroachBtn">⚠️ CHECK FARM ENCROACHMENT</button>
+        <button id="encroachBtn">CHECK FARM ENCROACHMENT</button>
     </div>
 
-    <!-- Report Panel (initially hidden) -->
+    <!-- Report Panel (draggable) -->
     <div class="report-panel" id="reportPanel">
-        <strong>📢 Report Human-Wildlife Conflict</strong>
+        <div class="panel-header">📢 Report Human-Wildlife Conflict</div>
         <textarea id="reportDesc" rows="2" placeholder="What happened?"></textarea>
         <select id="damageSelect">
             <option value="">-- Select damage level --</option>
@@ -304,8 +314,8 @@
             <option value="very high">Very High</option>
         </select>
         <div class="coord-row">
-            <button id="getLocationBtn">📍 My GPS</button>
-            <button id="pickMapBtn">🗺️ Pick on map</button>
+            <button id="getLocationBtn">📍 Use My GPS</button>
+            <button id="pickMapBtn">🗺️ Pick on Map</button>
         </div>
         <span id="coordsDisplay" style="font-size:10px;">No location selected</span>
         <button id="submitReportBtn">Submit Report</button>
@@ -336,7 +346,7 @@
     let map, activeLayers = {};
     let conflictMarkers = [], heatLayer;
     let notificationCount = 0;
-    let currentSelectedLocation = null;   // {lat, lng}
+    let currentSelectedLocation = null;
     let pickingActive = false;
 
     // ==================== MAP INIT ====================
@@ -353,7 +363,7 @@
             }).catch(e=>console.warn(`Could not load ${url}`));
         }
 
-        // Load all layers
+        // Load all layers (ensure filenames match exactly)
         loadGeoJSON('lupaneDistrict', 'LUPANE DISTRICT.geojson', { color: 'black', weight: 3, fillOpacity: 0 });
         loadGeoJSON('nationalParks', 'NATIONAL PARKS.geojson', { color: '#ff6600', weight: 2, fillOpacity: 0.3 });
         loadGeoJSON('protectedAreas', 'PROTECTED AREAS WITHIN LUPANE.geojson', { color: '#00ced1', weight: 2, fillOpacity: 0.3 });
@@ -402,7 +412,7 @@
             const legendDiv = document.getElementById('legendPanel');
             let content = '';
             if(map.hasLayer(activeLayers.lulc2010) || map.hasLayer(activeLayers.lulc2015) || map.hasLayer(activeLayers.lulc2020) || map.hasLayer(activeLayers.lulc2026)) {
-                content += `<strong>📖 LAND COVER</strong><br>
+                content += `<strong>LAND COVER</strong><br>
                     <p><span style="background:#f9a825;"></span> Farmland</p>
                     <p><span style="background:#2e7d32;"></span> Forest</p>
                     <p><span style="background:#8bc34a;"></span> Grassland</p>
@@ -411,25 +421,25 @@
                     <p><span style="background:#757575;"></span> Bare ground</p><hr>`;
             }
             if(map.hasLayer(activeLayers.lupaneDistrict)) {
-                content += `<strong>📖 LUPANE DISTRICT</strong><br><p><span style="background:black;"></span> Boundary</p><hr>`;
+                content += `<strong>LUPANE DISTRICT</strong><br><p><span style="background:black;"></span> Boundary</p><hr>`;
             }
             if(map.hasLayer(activeLayers.nationalParks)) {
-                content += `<strong>📖 NATIONAL PARKS</strong><br><p><span style="background:#ff6600;"></span> Park area</p><hr>`;
+                content += `<strong>NATIONAL PARKS</strong><br><p><span style="background:#ff6600;"></span> Park area</p><hr>`;
             }
             if(map.hasLayer(activeLayers.protectedAreas)) {
-                content += `<strong>📖 PROTECTED AREAS</strong><br><p><span style="background:#00ced1;"></span> Protected zone</p><hr>`;
+                content += `<strong>PROTECTED AREAS</strong><br><p><span style="background:#00ced1;"></span> Protected zone</p><hr>`;
             }
             if(map.hasLayer(activeLayers.farmBoundaries)) {
-                content += `<strong>📖 FARM BOUNDARIES</strong><br><p><span style="background:#cddc39;"></span> Agricultural fields</p><hr>`;
+                content += `<strong>FARM BOUNDARIES</strong><br><p><span style="background:#cddc39;"></span> Agricultural fields</p><hr>`;
             }
             if(map.hasLayer(activeLayers.rivers)) {
-                content += `<strong>📖 RIVERS</strong><br><p><span style="background:#1e88e5;"></span> River lines</p><hr>`;
+                content += `<strong>RIVERS</strong><br><p><span style="background:#1e88e5;"></span> River lines</p><hr>`;
             }
             if(map.hasLayer(activeLayers.waterLines)) {
-                content += `<strong>📖 WATER LINES</strong><br><p><span style="background:#42a5f5;"></span> Watercourses</p><hr>`;
+                content += `<strong>WATER LINES</strong><br><p><span style="background:#42a5f5;"></span> Watercourses</p><hr>`;
             }
             if(map.hasLayer(activeLayers.roads)) {
-                content += `<strong>📖 ROADS</strong><br><p><span style="background:#8d6e63;"></span> Road network</p><hr>`;
+                content += `<strong>ROADS</strong><br><p><span style="background:#8d6e63;"></span> Road network</p><hr>`;
             }
             if(content !== '') {
                 legendDiv.innerHTML = content;
@@ -440,7 +450,7 @@
         }
 
         // ==================== CONFLICT REPORTING ====================
-        let conflictPoints = []; // [lat,lng,intensity]
+        let conflictPoints = [];
         function updateHeatmap() {
             if(heatLayer) map.removeLayer(heatLayer);
             heatLayer = L.heatLayer(conflictPoints, { radius: 25, blur: 15, maxZoom: 17 });
@@ -455,8 +465,37 @@
             showNotification(`New conflict report: ${desc} (${rating})`);
         }
 
-        // Report panel logic
+        // Report panel draggable
         const reportPanel = document.getElementById('reportPanel');
+        const dragHandle = reportPanel.querySelector('.panel-header');
+        let offsetX, offsetY, startX, startY;
+        dragHandle.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            startX = e.clientX;
+            startY = e.clientY;
+            offsetX = reportPanel.offsetLeft;
+            offsetY = reportPanel.offsetTop;
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+        });
+        function onMouseMove(e) {
+            let dx = e.clientX - startX;
+            let dy = e.clientY - startY;
+            let left = offsetX + dx;
+            let top = offsetY + dy;
+            // constrain within window boundaries
+            left = Math.min(window.innerWidth - reportPanel.offsetWidth - 10, Math.max(10, left));
+            top = Math.min(window.innerHeight - reportPanel.offsetHeight - 10, Math.max(10, top));
+            reportPanel.style.left = left + 'px';
+            reportPanel.style.right = 'auto';
+            reportPanel.style.bottom = 'auto';
+            reportPanel.style.top = top + 'px';
+        }
+        function onMouseUp() {
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+        }
+
         const reportIcon = document.getElementById('reportIcon');
         const closeReport = document.getElementById('closeReportBtn');
         const coordsSpan = document.getElementById('coordsDisplay');
@@ -469,17 +508,15 @@
             tempMarker = L.marker([lat, lng]).addTo(map).bindPopup('Report location').openPopup();
         }
 
-        // GPS location
         document.getElementById('getLocationBtn').onclick = () => {
             if(navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(pos => {
                     setLocation(pos.coords.latitude, pos.coords.longitude);
                     showNotification("GPS location captured");
-                }, err => alert("Geolocation failed"));
+                }, err => alert("Geolocation failed or denied"));
             } else alert("Geolocation not supported");
         };
 
-        // Pick on map
         document.getElementById('pickMapBtn').onclick = () => {
             pickingActive = true;
             map.getContainer().style.cursor = 'crosshair';
@@ -499,8 +536,7 @@
             if(!desc || !damage) { alert("Fill description and select damage level."); return; }
             if(!currentSelectedLocation) { alert("Please select a location using GPS or picking on map."); return; }
             addConflictReport(currentSelectedLocation.lat, currentSelectedLocation.lng, desc, damage);
-            alert("Report submitted! Marker and heat point added.");
-            // Reset form
+            alert("Report submitted!");
             document.getElementById('reportDesc').value = '';
             document.getElementById('damageSelect').value = '';
             currentSelectedLocation = null;
@@ -510,7 +546,16 @@
             reportPanel.style.display = 'none';
         };
 
-        reportIcon.onclick = () => { reportPanel.style.display = 'block'; };
+        reportIcon.onclick = () => {
+            reportPanel.style.display = 'block';
+            // reset position if needed
+            if (!reportPanel.style.left) {
+                reportPanel.style.right = '20px';
+                reportPanel.style.bottom = '80px';
+                reportPanel.style.left = 'auto';
+                reportPanel.style.top = 'auto';
+            }
+        };
         closeReport.onclick = () => { reportPanel.style.display = 'none'; };
 
         // Notification system
