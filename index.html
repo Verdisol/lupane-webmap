@@ -9,16 +9,13 @@
     <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6.5.0/turf.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <!-- Chart.js for graphs -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <!-- html2canvas + jsPDF for PDF export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', sans-serif; overflow: hidden; }
         
-        /* LOGIN MODAL – your background.jpg covers the whole page */
         .login-modal {
             position: fixed;
             top: 0;
@@ -70,7 +67,6 @@
         .map-container { display: none; height: 100vh; width: 100%; }
         #map { height: calc(100vh - 75px); width: 100%; }
 
-        /* HEADER */
         .header {
             background-image: url('background.jpg');
             background-size: cover;
@@ -135,7 +131,6 @@
             cursor: pointer;
         }
 
-        /* Layer control (same as before) */
         .layer-control {
             position: absolute;
             top: 90px;
@@ -145,16 +140,18 @@
             padding: 12px;
             border-radius: 10px;
             z-index: 1000;
-            min-width: 220px;
+            min-width: 240px;
             border: 2px solid #4caf50;
             animation: blinkBorder 1.5s infinite;
+            max-height: 70vh;
+            overflow-y: auto;
         }
         @keyframes blinkBorder {
             0% { border-color: #4caf50; box-shadow: 0 0 0 #4caf50; }
             50% { border-color: #a5d6a7; box-shadow: 0 0 12px #4caf50; }
             100% { border-color: #4caf50; box-shadow: 0 0 0 #4caf50; }
         }
-        .layer-control button, .layer-control select {
+        .layer-control select, .layer-control button {
             display: block;
             width: 100%;
             margin: 6px 0;
@@ -166,10 +163,9 @@
             cursor: pointer;
             font-size: 12px;
         }
-        .layer-control button:hover, .layer-control select:hover { background: #1abc9c; }
+        .layer-control select:hover, .layer-control button:hover { background: #1abc9c; }
         .layer-control hr { margin: 10px 0; border-color: #aaa; }
 
-        /* Legend */
         .legend {
             position: absolute;
             bottom: 20px;
@@ -186,7 +182,6 @@
         }
         .legend span { display: inline-block; width: 18px; height: 18px; margin-right: 8px; border-radius: 3px; }
 
-        /* Report panel (draggable) */
         .report-panel {
             position: absolute;
             bottom: 80px;
@@ -235,7 +230,6 @@
         .coord-row button { flex: 1; margin-top: 0; background: #2c3e50; }
         .coord-row button:hover { background: #1abc9c; }
 
-        /* Graphs panel – collapsible */
         .graphs-panel {
             position: absolute;
             top: 90px;
@@ -253,30 +247,10 @@
             display: none;
             box-shadow: 0 4px 15px rgba(0,0,0,0.5);
         }
-        .graphs-panel h3 {
-            margin: 0 0 10px 0;
-            font-size: 18px;
-            text-align: center;
-            border-bottom: 1px solid #4caf50;
-        }
-        .graph-container {
-            margin-bottom: 25px;
-            background: rgba(0,0,0,0.6);
-            padding: 10px;
-            border-radius: 8px;
-        }
-        .graph-container canvas {
-            max-height: 200px;
-            width: 100%;
-        }
-        .close-graphs {
-            float: right;
-            background: none;
-            border: none;
-            color: white;
-            font-size: 20px;
-            cursor: pointer;
-        }
+        .graphs-panel h3 { margin: 0 0 10px 0; font-size: 18px; text-align: center; }
+        .graph-container { margin-bottom: 25px; background: rgba(0,0,0,0.6); padding: 10px; border-radius: 8px; }
+        .graph-container canvas { max-height: 200px; width: 100%; }
+        .close-graphs { float: right; background: none; border: none; color: white; font-size: 20px; cursor: pointer; }
         .notification-badge {
             position: absolute;
             top: -8px;
@@ -289,7 +263,7 @@
             font-weight: bold;
         }
         @media (max-width: 700px) {
-            .layer-control { min-width: 170px; right: 10px; top: 75px; }
+            .layer-control { min-width: 200px; right: 10px; top: 75px; }
             .report-panel { width: 280px; right: 10px; bottom: 10px; }
             .graphs-panel { width: 300px; left: 10px; top: 75px; }
             .map-title { font-size: 1rem; }
@@ -342,10 +316,28 @@
             <option value="2020">LAND USE LAND COVER 2020</option>
             <option value="2026">LAND USE LAND COVER 2026</option>
         </select>
+        <hr>
+        <strong>FARM BOUNDARIES</strong>
+        <select id="farmDropdown">
+            <option value="">-- Select Year --</option>
+            <option value="2010">FARMS 2010</option>
+            <option value="2015">FARMS 2015</option>
+            <option value="2020">FARMS 2020</option>
+            <option value="2026">FARMS 2026</option>
+        </select>
+        <hr>
+        <strong>FOREST LAYERS</strong>
+        <select id="forestDropdown">
+            <option value="">-- Select Year --</option>
+            <option value="2010">FOREST 2010</option>
+            <option value="2015">FOREST 2015</option>
+            <option value="2020">FOREST 2020</option>
+            <option value="2025">FOREST 2025</option>
+        </select>
+        <hr>
         <button id="lupaneDistrictBtn">LUPANE BOUNDARY DISTRICT</button>
         <button id="nationalParksBtn">NATIONAL PARKS</button>
         <button id="protectedAreasBtn">PROTECTED AREAS WITHIN LUPANE</button>
-        <button id="farmBoundariesBtn">LUPANE FARM BOUNDARIES</button>
         <button id="riversBtn">RIVERS</button>
         <button id="waterLinesBtn">WATER LINES</button>
         <button id="roadsBtn">ROADS (styled)</button>
@@ -371,27 +363,15 @@
         <button id="submitReportBtn">Submit Report</button>
         <button id="closeReportBtn" class="close-btn">Close</button>
     </div>
-
-    <!-- GRAPHS PANEL (collapsible) -->
     <div class="graphs-panel" id="graphsPanel">
         <button class="close-graphs" id="closeGraphsBtn">&times;</button>
         <h3>📊 Land Use Change Statistics</h3>
-        <div class="graph-container">
-            <canvas id="farmlandExpansionChart" width="400" height="200"></canvas>
-        </div>
-        <div class="graph-container">
-            <canvas id="forestLossChart" width="400" height="200"></canvas>
-        </div>
-        <div class="graph-container">
-            <canvas id="waterChangeChart" width="400" height="200"></canvas>
-        </div>
-        <div class="graph-container">
-            <canvas id="landUsePieChart" width="400" height="200"></canvas>
-        </div>
-        <div class="graph-container">
-            <canvas id="barComparisonChart" width="400" height="200"></canvas>
-        </div>
-        <p style="font-size:10px; text-align:center;">Data source: lulc_stats.csv (farmland, forest, water, etc.)</p>
+        <div class="graph-container"><canvas id="farmlandExpansionChart" width="400" height="200"></canvas></div>
+        <div class="graph-container"><canvas id="forestLossChart" width="400" height="200"></canvas></div>
+        <div class="graph-container"><canvas id="waterChangeChart" width="400" height="200"></canvas></div>
+        <div class="graph-container"><canvas id="landUsePieChart" width="400" height="200"></canvas></div>
+        <div class="graph-container"><canvas id="barComparisonChart" width="400" height="200"></canvas></div>
+        <p style="font-size:10px; text-align:center;">Data source: lulc_stats.csv</p>
     </div>
 </div>
 
@@ -414,7 +394,7 @@
     };
     document.addEventListener('keypress', e => { if(e.key==='Enter' && loginModal.style.display!=='none') loginBtn.click(); });
 
-    // ==================== GLOBAL VARIABLES ====================
+    // ==================== GLOBALS ====================
     let map, activeLayers = {};
     let conflictMarkers = [], heatLayer;
     let notificationCount = 0;
@@ -422,17 +402,12 @@
     let pickingActive = false;
     let currentBaseLayer = null;
     let currentLulcLayer = null;
-
-    // Chart instances
-    let farmlandChart, forestChart, waterChart, pieChart, barChart;
+    let currentFarmLayer = null;
+    let currentForestLayer = null;
 
     // Basemaps
-    const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors'
-    });
-    const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        attribution: 'Tiles &copy; Esri'
-    });
+    const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' });
+    const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles &copy; Esri' });
 
     function switchBaseLayer(type) {
         if (currentBaseLayer) map.removeLayer(currentBaseLayer);
@@ -440,62 +415,86 @@
         currentBaseLayer.addTo(map);
     }
 
-    // LULC render function (QGIS style)
+    // LULC render (QGIS style as before)
     function renderLULC(data, ctx, canvasWidth, canvasHeight) {
-        const w = data[0].length;
-        const h = data.length;
+        const w = data[0].length, h = data.length;
         const imgData = ctx.getImageData(0, 0, canvasWidth, canvasHeight);
         for (let i = 0; i < h; i++) {
             for (let j = 0; j < w; j++) {
                 let val = Math.round(data[i][j]);
                 let r, g, b, a = 255;
                 switch(val) {
-                    case 0: r=35; g=17; b=231; break;     // Water
-                    case 1: r=62; g=160; b=23; break;     // Crop
-                    case 2: r=3; g=19; b=5; break;        // Built-up
-                    case 3: r=21; g=18; b=1; a=168; break;// Rocky
-                    case 4: r=142; g=109; b=32; break;    // Bare
-                    case 5: r=4; g=65; b=10; break;       // Forest
-                    case 6: r=196; g=175; b=16; break;    // Roads
+                    case 0: r=35; g=17; b=231; break;
+                    case 1: r=62; g=160; b=23; break;
+                    case 2: r=3; g=19; b=5; break;
+                    case 3: r=21; g=18; b=1; a=168; break;
+                    case 4: r=142; g=109; b=32; break;
+                    case 5: r=4; g=65; b=10; break;
+                    case 6: r=196; g=175; b=16; break;
                     default: r=128; g=128; b=128; a=128;
                 }
                 const idx = (i * canvasWidth + j) * 4;
-                imgData.data[idx] = r;
-                imgData.data[idx+1] = g;
-                imgData.data[idx+2] = b;
-                imgData.data[idx+3] = a;
+                imgData.data[idx]=r; imgData.data[idx+1]=g; imgData.data[idx+2]=b; imgData.data[idx+3]=a;
             }
         }
-        ctx.putImageData(imgData, 0, 0);
+        ctx.putImageData(imgData,0,0);
     }
 
-    // Load LULC GeoTIFF from Cloud Storage or local
-    function loadLulcYear(year, url) {
-        if (currentLulcLayer) map.removeLayer(currentLulcLayer);
-        if (!url) return;
-        currentLulcLayer = L.leafletGeotiff(url, {
-            renderer: L.leafletGeotiff.vectorTile({
-                render: function(data, canvas, ctx) {
-                    renderLULC(data, ctx, canvas.width, canvas.height);
-                }
+    // Farm boundary style: yellow gradient fill, yellow outline (from QGIS)
+    const farmStyle = {
+        color: '#f7e137',        // outline color from QGIS (247,225,55)
+        weight: 1.5,
+        fillColor: '#fff633',    // light yellow fill (255,246,0)
+        fillOpacity: 0.6,
+        opacity: 0.8
+    };
+
+    // Forest style: dark green gradient fill, dark green outline
+    const forestStyle = {
+        color: '#388036',        // outline (56,128,54)
+        weight: 1.5,
+        fillColor: '#042d00',    // dark green (4,45,0)
+        fillOpacity: 0.7,
+        opacity: 0.9
+    };
+
+    function loadGeoJSONLayer(name, url, style, popupField = 'Name') {
+        fetch(url)
+            .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+            .then(data => {
+                if (activeLayers[name]) map.removeLayer(activeLayers[name]);
+                const layer = L.geoJSON(data, {
+                    style: style,
+                    onEachFeature: (f, l) => {
+                        let props = f.properties;
+                        let popupContent = `<b>${name}</b><br>`;
+                        if (props.Name) popupContent += `Name: ${props.Name}<br>`;
+                        if (props.AREA) popupContent += `Area: ${props.AREA} ha<br>`;
+                        l.bindPopup(popupContent);
+                    }
+                });
+                activeLayers[name] = layer;
+                layer.addTo(map);
+                updateLegend();
             })
-        }).addTo(map);
-        updateLegend();
+            .catch(err => console.warn(`Could not load ${url}:`, err));
+    }
+
+    function removeLayerIfExists(name) {
+        if (activeLayers[name] && map.hasLayer(activeLayers[name])) {
+            map.removeLayer(activeLayers[name]);
+            delete activeLayers[name];
+        }
     }
 
     // ==================== GRAPHS FROM CSV ====================
+    let farmlandChart, forestChart, waterChart, pieChart, barChart;
     async function loadAndRenderGraphs() {
         try {
             const response = await fetch('lulc_stats.csv');
             const csvText = await response.text();
             const rows = csvText.trim().split('\n');
-            const headers = rows[0].split(',');
-            const years = [];
-            const farmland = [];
-            const forest = [];
-            const water = [];
-            const grassland = [];
-            const urban = [];
+            const years = [], farmland = [], forest = [], water = [], grassland = [], urban = [];
             for (let i = 1; i < rows.length; i++) {
                 const cols = rows[i].split(',');
                 if (cols.length < 6) continue;
@@ -506,51 +505,33 @@
                 grassland.push(parseFloat(cols[4]));
                 urban.push(parseFloat(cols[5]));
             }
-            // Farmland expansion (line + bar will be separate)
             if (farmlandChart) farmlandChart.destroy();
-            const ctxFarm = document.getElementById('farmlandExpansionChart').getContext('2d');
-            farmlandChart = new Chart(ctxFarm, {
-                type: 'line',
-                data: { labels: years, datasets: [{ label: 'Farmland Area (ha)', data: farmland, borderColor: '#f9a825', backgroundColor: 'rgba(249,168,37,0.2)', fill: true, tension: 0.3 }] },
-                options: { responsive: true, plugins: { legend: { position: 'top' }, title: { display: true, text: 'Farmland Expansion (2000-2026)' } } }
+            farmlandChart = new Chart(document.getElementById('farmlandExpansionChart'), {
+                type: 'line', data: { labels: years, datasets: [{ label: 'Farmland Area (ha)', data: farmland, borderColor: '#f9a825', fill: true }] },
+                options: { responsive: true, plugins: { title: { display: true, text: 'Farmland Expansion' } } }
             });
-            // Forest loss
             if (forestChart) forestChart.destroy();
-            const ctxForest = document.getElementById('forestLossChart').getContext('2d');
-            forestChart = new Chart(ctxForest, {
-                type: 'line',
-                data: { labels: years, datasets: [{ label: 'Forest Area (ha)', data: forest, borderColor: '#2e7d32', backgroundColor: 'rgba(46,125,50,0.2)', fill: true }] },
-                options: { responsive: true, plugins: { title: { display: true, text: 'Forest Cover Loss Over Time' } } }
+            forestChart = new Chart(document.getElementById('forestLossChart'), {
+                type: 'line', data: { labels: years, datasets: [{ label: 'Forest Area (ha)', data: forest, borderColor: '#2e7d32', fill: true }] },
+                options: { responsive: true, plugins: { title: { display: true, text: 'Forest Cover Loss' } } }
             });
-            // Water change
             if (waterChart) waterChart.destroy();
-            const ctxWater = document.getElementById('waterChangeChart').getContext('2d');
-            waterChart = new Chart(ctxWater, {
-                type: 'line',
-                data: { labels: years, datasets: [{ label: 'Water Bodies (ha)', data: water, borderColor: '#1565c0', backgroundColor: 'rgba(21,101,192,0.2)', fill: true }] },
+            waterChart = new Chart(document.getElementById('waterChangeChart'), {
+                type: 'line', data: { labels: years, datasets: [{ label: 'Water Bodies (ha)', data: water, borderColor: '#1565c0', fill: true }] },
                 options: { responsive: true, plugins: { title: { display: true, text: 'Water Extent Change' } } }
             });
-            // Pie chart for most recent year
-            const lastIdx = years.length - 1;
-            const pieData = {
-                labels: ['Farmland', 'Forest', 'Grassland', 'Water', 'Urban'],
-                datasets: [{ data: [farmland[lastIdx], forest[lastIdx], grassland[lastIdx], water[lastIdx], urban[lastIdx]], backgroundColor: ['#f9a825','#2e7d32','#8bc34a','#1565c0','#c62828'] }]
-            };
+            const last = years.length-1;
             if (pieChart) pieChart.destroy();
-            const ctxPie = document.getElementById('landUsePieChart').getContext('2d');
-            pieChart = new Chart(ctxPie, { type: 'pie', data: pieData, options: { responsive: true, plugins: { title: { display: true, text: `Land Use Distribution (${years[lastIdx]})` } } } });
-            // Bar chart comparison (farmland vs forest over years)
-            if (barChart) barChart.destroy();
-            const ctxBar = document.getElementById('barComparisonChart').getContext('2d');
-            barChart = new Chart(ctxBar, {
-                type: 'bar',
-                data: { labels: years, datasets: [{ label: 'Farmland (ha)', data: farmland, backgroundColor: '#f9a825' }, { label: 'Forest (ha)', data: forest, backgroundColor: '#2e7d32' }] },
-                options: { responsive: true, plugins: { title: { display: true, text: 'Farmland vs Forest Comparison' } }, scales: { y: { beginAtZero: true } } }
+            pieChart = new Chart(document.getElementById('landUsePieChart'), {
+                type: 'pie', data: { labels: ['Farmland','Forest','Grassland','Water','Urban'], datasets: [{ data: [farmland[last],forest[last],grassland[last],water[last],urban[last]], backgroundColor: ['#f9a825','#2e7d32','#8bc34a','#1565c0','#c62828'] }] },
+                options: { responsive: true, plugins: { title: { display: true, text: `Land Use ${years[last]}` } } }
             });
-        } catch (err) {
-            console.warn('Could not load lulc_stats.csv', err);
-            document.querySelector('.graphs-panel').innerHTML += '<p style="color:red;">Error loading CSV. Please ensure lulc_stats.csv is in the same folder.</p>';
-        }
+            if (barChart) barChart.destroy();
+            barChart = new Chart(document.getElementById('barComparisonChart'), {
+                type: 'bar', data: { labels: years, datasets: [{ label: 'Farmland (ha)', data: farmland, backgroundColor: '#f9a825' }, { label: 'Forest (ha)', data: forest, backgroundColor: '#2e7d32' }] },
+                options: { responsive: true, plugins: { title: { display: true, text: 'Farmland vs Forest' } }, scales: { y: { beginAtZero: true } } }
+            });
+        } catch(err) { console.warn('CSV error', err); }
     }
 
     // ==================== PDF EXPORT ====================
@@ -560,34 +541,28 @@
         const originalOverflow = element.style.overflow;
         element.style.overflow = 'visible';
         try {
-            const canvas = await html2canvas(element, { scale: 2, logging: false, useCORS: true });
+            const canvas = await html2canvas(element, { scale: 2, useCORS: true });
             const imgData = canvas.toDataURL('image/png');
             const pdf = new jsPDF('landscape', 'mm', 'a4');
-            const imgWidth = 297;
-            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+            const imgWidth = 297, imgHeight = (canvas.height * imgWidth) / canvas.width;
             pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
             pdf.save('lupane_map_report.pdf');
-        } catch (err) {
-            alert('PDF export failed: ' + err);
-        } finally {
-            element.style.overflow = originalOverflow;
-        }
+        } catch(err) { alert('PDF export failed'); } finally { element.style.overflow = originalOverflow; }
     }
 
-    // ==================== MAP INITIALIZATION ====================
+    // ==================== MAP INIT ====================
     function initMap() {
         map = L.map('map').setView([-18.92, 27.55], 10);
         currentBaseLayer = osmLayer;
         currentBaseLayer.addTo(map);
 
-        // Basemap switcher
         document.querySelector('input[value="map"]').addEventListener('change', () => switchBaseLayer('map'));
         document.querySelector('input[value="satellite"]').addEventListener('change', () => switchBaseLayer('satellite'));
 
         // Fallback boundary
         const fallbackBoundary = L.polygon([
-            [27.40, -18.80], [27.65, -18.80], [27.70, -18.90],
-            [27.65, -19.05], [27.40, -19.05], [27.35, -18.95], [27.40, -18.80]
+            [27.40,-18.80],[27.65,-18.80],[27.70,-18.90],
+            [27.65,-19.05],[27.40,-19.05],[27.35,-18.95],[27.40,-18.80]
         ], { color: '#e63946', weight: 4, fillOpacity: 0, dashArray: '8,8' }).addTo(map);
         fallbackBoundary.bindPopup("Lupane District (fallback)");
         activeLayers.lupaneDistrict = fallbackBoundary;
@@ -605,7 +580,7 @@
             })
             .catch(() => console.warn("Using fallback boundary"));
 
-        // Load other GeoJSON layers (simplified for brevity, but keep existing)
+        // Load other vector layers (same as before)
         function loadOtherGeoJSON(name, url, style, popupField='name') {
             fetch(url).then(r=>r.json()).then(data=>{
                 activeLayers[name] = L.geoJSON(data, { style: style, onEachFeature: (f,l)=>{ if(f.properties) l.bindPopup(f.properties[popupField] || name); } });
@@ -613,7 +588,6 @@
         }
         loadOtherGeoJSON('nationalParks', 'NATIONAL PARKS.geojson', { color: '#ff6600', weight: 2, fillOpacity: 0.3 });
         loadOtherGeoJSON('protectedAreas', 'PROTECTED AREAS WITHIN LUPANE.geojson', { color: '#00ced1', weight: 2, fillOpacity: 0.3 });
-        loadOtherGeoJSON('farmBoundaries', 'LUPANE COMMUNAL FARM BOUNDARIES.geojson', { color: '#cddc39', weight: 2, fillOpacity: 0.4 });
         loadOtherGeoJSON('rivers', 'RIVERS.geojson', { color: '#1e88e5', weight: 2, fillOpacity: 0 });
         loadOtherGeoJSON('waterLines', 'WATER LINES.geojson', { color: '#42a5f5', weight: 2, fillOpacity: 0 });
         loadOtherGeoJSON('roads', 'ROADS.geojson', { color: '#DB1E2A', weight: 2, dashArray: '4,12', lineCap: 'round' });
@@ -626,7 +600,14 @@
             2020: 'https://storage.googleapis.com/lupane_lulc_cogs/lulc_2020.tif',
             2026: 'https://storage.googleapis.com/lupane_lulc_cogs/lulc_2026.tif'
         };
-
+        function loadLulcYear(year, url) {
+            if (currentLulcLayer) map.removeLayer(currentLulcLayer);
+            if (!url) return;
+            currentLulcLayer = L.leafletGeotiff(url, {
+                renderer: L.leafletGeotiff.vectorTile({ render: (data,canvas,ctx) => renderLULC(data,ctx,canvas.width,canvas.height) })
+            }).addTo(map);
+            updateLegend();
+        }
         document.getElementById('lulcDropdown').onchange = (e) => {
             const val = e.target.value;
             if (val === '2010') loadLulcYear(2010, lulcUrls[2010]);
@@ -636,8 +617,31 @@
             else { if (currentLulcLayer) map.removeLayer(currentLulcLayer); currentLulcLayer = null; updateLegend(); }
         };
 
-        function toggleLayer(name) {
-            if (!activeLayers[name]) { alert(`Layer ${name} not loaded yet`); return; }
+        // Farm boundaries dropdown
+        const farmDropdown = document.getElementById('farmDropdown');
+        farmDropdown.onchange = () => {
+            const year = farmDropdown.value;
+            removeLayerIfExists('farmLayer');
+            if (year) {
+                const fileName = `FARMS_${year}.geojson`;
+                loadGeoJSONLayer('farmLayer', fileName, farmStyle, 'Name');
+            }
+        };
+
+        // Forest layers dropdown
+        const forestDropdown = document.getElementById('forestDropdown');
+        forestDropdown.onchange = () => {
+            const year = forestDropdown.value;
+            removeLayerIfExists('forestLayer');
+            if (year) {
+                const fileName = `FOREST_${year}.geojson`;
+                loadGeoJSONLayer('forestLayer', fileName, forestStyle, 'Name');
+            }
+        };
+
+        // Toggle for other layers
+        function toggleLayer(name, layerObj) {
+            if (!activeLayers[name]) { alert(`Layer ${name} not loaded`); return; }
             if (map.hasLayer(activeLayers[name])) map.removeLayer(activeLayers[name]);
             else map.addLayer(activeLayers[name]);
             updateLegend();
@@ -645,32 +649,27 @@
         document.getElementById('lupaneDistrictBtn').onclick = () => toggleLayer('lupaneDistrict');
         document.getElementById('nationalParksBtn').onclick = () => toggleLayer('nationalParks');
         document.getElementById('protectedAreasBtn').onclick = () => toggleLayer('protectedAreas');
-        document.getElementById('farmBoundariesBtn').onclick = () => toggleLayer('farmBoundaries');
         document.getElementById('riversBtn').onclick = () => toggleLayer('rivers');
         document.getElementById('waterLinesBtn').onclick = () => toggleLayer('waterLines');
         document.getElementById('roadsBtn').onclick = () => toggleLayer('roads');
         document.getElementById('damsBtn').onclick = () => toggleLayer('dams');
 
+        // Legend update
         function updateLegend() {
             const legendDiv = document.getElementById('legendPanel');
             let content = '';
-            const lulcVisible = currentLulcLayer && map.hasLayer(currentLulcLayer);
-            if (lulcVisible) {
-                content += `<strong>LAND COVER (QGIS style)</strong><br>
-                    <p><span style="background:#2311e7;"></span> Water</p>
-                    <p><span style="background:#3ea017;"></span> Crop Fields</p>
-                    <p><span style="background:#031305;"></span> Built up Area</p>
-                    <p><span style="background:#151201;"></span> Rocky Area</p>
-                    <p><span style="background:#8e6d20;"></span> Bare Land</p>
-                    <p><span style="background:#04410a;"></span> Forest</p>
-                    <p><span style="background:#c4af10;"></span> Roads</p><hr>`;
+            if (currentLulcLayer && map.hasLayer(currentLulcLayer)) {
+                content += `<strong>LAND COVER (QGIS)</strong><br><p><span style="background:#2311e7;"></span> Water</p><p><span style="background:#3ea017;"></span> Crop Fields</p><p><span style="background:#031305;"></span> Built up Area</p><p><span style="background:#151201;"></span> Rocky Area</p><p><span style="background:#8e6d20;"></span> Bare Land</p><p><span style="background:#04410a;"></span> Forest</p><p><span style="background:#c4af10;"></span> Roads</p><hr>`;
             }
-            if (activeLayers.lupaneDistrict && map.hasLayer(activeLayers.lupaneDistrict)) {
-                content += `<strong>LUPANE BOUNDARY</strong><br><p><span style="background:#060509;"></span> Boundary</p><hr>`;
+            if (activeLayers.farmLayer && map.hasLayer(activeLayers.farmLayer)) {
+                content += `<strong>FARM BOUNDARIES (${farmDropdown.value})</strong><br><p><span style="background:#fff633;"></span> Yellow gradient (farm fields)</p><hr>`;
             }
+            if (activeLayers.forestLayer && map.hasLayer(activeLayers.forestLayer)) {
+                content += `<strong>FOREST LAYER (${forestDropdown.value})</strong><br><p><span style="background:#042d00;"></span> Dark green forest</p><hr>`;
+            }
+            if (activeLayers.lupaneDistrict && map.hasLayer(activeLayers.lupaneDistrict)) content += `<strong>LUPANE BOUNDARY</strong><br><p><span style="background:#060509;"></span> Boundary</p><hr>`;
             if (activeLayers.nationalParks && map.hasLayer(activeLayers.nationalParks)) content += `<strong>NATIONAL PARKS</strong><br><p><span style="background:#ff6600;"></span> Park area</p><hr>`;
             if (activeLayers.protectedAreas && map.hasLayer(activeLayers.protectedAreas)) content += `<strong>PROTECTED AREAS</strong><br><p><span style="background:#00ced1;"></span> Protected zone</p><hr>`;
-            if (activeLayers.farmBoundaries && map.hasLayer(activeLayers.farmBoundaries)) content += `<strong>FARM BOUNDARIES</strong><br><p><span style="background:#cddc39;"></span> Agricultural fields</p><hr>`;
             if (activeLayers.rivers && map.hasLayer(activeLayers.rivers)) content += `<strong>RIVERS</strong><br><p><span style="background:#1e88e5;"></span> River lines</p><hr>`;
             if (activeLayers.waterLines && map.hasLayer(activeLayers.waterLines)) content += `<strong>WATER LINES</strong><br><p><span style="background:#42a5f5;"></span> Watercourses</p><hr>`;
             if (activeLayers.roads && map.hasLayer(activeLayers.roads)) content += `<strong>ROADS</strong><br><p><span style="background:#DB1E2A;"></span> Roads (dashed)</p><hr>`;
@@ -679,11 +678,11 @@
             else legendDiv.style.display = 'none';
         }
 
-        // Conflict reporting (minimal, same as before)
+        // Conflict reporting (simplified)
         let conflictPoints = [];
         function updateHeatmap() {
             if (heatLayer) map.removeLayer(heatLayer);
-            heatLayer = L.heatLayer(conflictPoints, { radius: 25, blur: 15, maxZoom: 17 });
+            heatLayer = L.heatLayer(conflictPoints, { radius: 25, blur: 15 });
             heatLayer.addTo(map);
         }
         function addConflictReport(lat, lng, desc, rating) {
@@ -694,30 +693,24 @@
             showNotification(`New conflict report: ${desc} (${rating})`);
         }
 
-        // Report panel draggable (same as before)
+        // Report panel draggable
         const reportPanel = document.getElementById('reportPanel');
         const dragHandle = reportPanel.querySelector('.panel-header');
         let offsetX, offsetY, startX, startY;
         dragHandle.addEventListener('mousedown', (e) => {
             e.preventDefault();
-            startX = e.clientX;
-            startY = e.clientY;
-            offsetX = reportPanel.offsetLeft;
-            offsetY = reportPanel.offsetTop;
+            startX = e.clientX; startY = e.clientY;
+            offsetX = reportPanel.offsetLeft; offsetY = reportPanel.offsetTop;
             document.addEventListener('mousemove', onMouseMove);
             document.addEventListener('mouseup', onMouseUp);
         });
         function onMouseMove(e) {
-            let dx = e.clientX - startX;
-            let dy = e.clientY - startY;
-            let left = offsetX + dx;
-            let top = offsetY + dy;
+            let left = offsetX + (e.clientX - startX);
+            let top = offsetY + (e.clientY - startY);
             left = Math.min(window.innerWidth - reportPanel.offsetWidth - 10, Math.max(10, left));
             top = Math.min(window.innerHeight - reportPanel.offsetHeight - 10, Math.max(10, top));
-            reportPanel.style.left = left + 'px';
-            reportPanel.style.right = 'auto';
-            reportPanel.style.bottom = 'auto';
-            reportPanel.style.top = top + 'px';
+            reportPanel.style.left = left + 'px'; reportPanel.style.right = 'auto';
+            reportPanel.style.top = top + 'px'; reportPanel.style.bottom = 'auto';
         }
         function onMouseUp() { document.removeEventListener('mousemove', onMouseMove); document.removeEventListener('mouseup', onMouseUp); }
 
@@ -774,33 +767,11 @@
         }
         document.getElementById('notifyIcon').onclick = () => { notificationCount = 0; document.getElementById('notifBadge').innerText = '0'; };
 
-        // Encroachment detection (simplified)
-        async function checkEncroachment() {
-            alert('Encroachment check: function placeholder');
-        }
-        document.getElementById('encroachBtn').onclick = checkEncroachment;
-        document.getElementById('menuIcon').onclick = () => {
-            const panel = document.getElementById('layerControl');
-            panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-        };
-
-        // Graphs panel toggle and load data
-        const graphsPanel = document.getElementById('graphsPanel');
-        const graphsIcon = document.getElementById('graphsIcon');
-        const closeGraphsBtn = document.getElementById('closeGraphsBtn');
-        graphsIcon.onclick = () => {
-            if (graphsPanel.style.display === 'none' || !graphsPanel.style.display) {
-                graphsPanel.style.display = 'block';
-                loadAndRenderGraphs();
-            } else {
-                graphsPanel.style.display = 'none';
-            }
-        };
-        closeGraphsBtn.onclick = () => graphsPanel.style.display = 'none';
-
-        // PDF export
-        const exportPdfIcon = document.getElementById('exportPdfIcon');
-        exportPdfIcon.onclick = exportToPDF;
+        document.getElementById('encroachBtn').onclick = () => alert('Encroachment check placeholder');
+        document.getElementById('menuIcon').onclick = () => { const panel = document.getElementById('layerControl'); panel.style.display = panel.style.display === 'none' ? 'block' : 'none'; };
+        document.getElementById('graphsIcon').onclick = () => { const panel = document.getElementById('graphsPanel'); panel.style.display = panel.style.display === 'none' ? 'block' : 'none'; if (panel.style.display === 'block') loadAndRenderGraphs(); };
+        document.getElementById('closeGraphsBtn').onclick = () => document.getElementById('graphsPanel').style.display = 'none';
+        document.getElementById('exportPdfIcon').onclick = exportToPDF;
 
         updateHeatmap();
         map.fitBounds([[-19.05,27.35],[-18.80,27.70]]);
