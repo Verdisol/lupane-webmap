@@ -13,28 +13,29 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden; }
         
-        /* ---------- LOGIN PAGE (MODAL) ---------- */
+        /* ---------- LOGIN PAGE WITH BIG FIVE BACKGROUND ---------- */
         .login-modal {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.85);
+            background: rgba(0,0,0,0.75);
             z-index: 10000;
             display: flex;
             justify-content: center;
             align-items: center;
-            backdrop-filter: blur(5px);
+            backdrop-filter: blur(3px);
         }
         .login-box {
-            background: rgba(255,255,255,0.95);
-            width: 380px;
+            background: rgba(0,0,0,0.7);
+            width: 400px;
             padding: 35px;
-            border-radius: 20px;
+            border-radius: 25px;
             text-align: center;
-            box-shadow: 0 0 30px rgba(0,0,0,0.5);
-            background-image: url('https://images.unsplash.com/photo-1516426122078-c23e76319801?q=80&w=2070&auto=format&fit=crop');
+            box-shadow: 0 0 40px rgba(0,0,0,0.6);
+            /* Big Five animals background image (high-res with lion, elephant, rhino, leopard, buffalo) */
+            background-image: url('https://images.unsplash.com/photo-1564760055775-d63b17a55c44?q=80&w=2073&auto=format&fit=crop');
             background-size: cover;
             background-position: center;
             position: relative;
@@ -47,24 +48,25 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.65);
-            border-radius: 20px;
+            background: rgba(0,0,0,0.6);
+            border-radius: 25px;
             z-index: 0;
         }
         .login-box h2 {
             position: relative;
             z-index: 1;
             color: #ffd700;
-            text-shadow: 2px 2px 4px #000;
+            text-shadow: 2px 2px 8px #000;
             margin-bottom: 20px;
             font-size: 28px;
+            letter-spacing: 1px;
         }
         .login-box input {
             position: relative;
             z-index: 1;
             width: 100%;
             padding: 12px;
-            margin: 10px 0;
+            margin: 12px 0;
             border: none;
             border-radius: 40px;
             background: rgba(255,255,255,0.9);
@@ -77,13 +79,13 @@
             background: #1a3c2c;
             color: white;
             border: none;
-            padding: 10px 25px;
+            padding: 12px 30px;
             border-radius: 40px;
             cursor: pointer;
-            font-size: 16px;
+            font-size: 18px;
             font-weight: bold;
             transition: 0.3s;
-            margin-top: 10px;
+            margin-top: 15px;
         }
         .login-box button:hover {
             background: #2e7d32;
@@ -92,7 +94,7 @@
         .error-msg {
             position: relative;
             z-index: 1;
-            color: #ffcccc;
+            color: #ffaaaa;
             font-size: 12px;
             margin-top: 10px;
         }
@@ -228,7 +230,7 @@
 </head>
 <body>
 
-<!-- LOGIN MODAL -->
+<!-- LOGIN MODAL WITH BIG FIVE BACKGROUND -->
 <div id="loginModal" class="login-modal">
     <div class="login-box">
         <h2>🌍 LUPANE MONITOR</h2>
@@ -236,7 +238,7 @@
         <input type="password" id="password" placeholder="Password" autocomplete="off">
         <button id="loginBtn">Enter Map</button>
         <div id="loginError" class="error-msg"></div>
-        <p style="position:relative; z-index:1; font-size:10px; color:#ddd; margin-top:15px;">Demo: any username/password</p>
+        <p style="position:relative; z-index:1; font-size:10px; color:#ddd; margin-top:15px;">🐘🦁🐃🐆🦏 The Big Five</p>
     </div>
 </div>
 
@@ -288,7 +290,7 @@
         <button id="protectedAreasBtn">🛡️ PROTECTED AREAS WITHIN LUPANE</button>
         <button id="farmBoundariesBtn">🚜 LUPANE FARM BOUNDARIES</button>
         <hr>
-        <small style="display:block; text-align:center;">*.geojson loaded from folder</small>
+        <small style="display:block; text-align:center;">*.geojson files loaded</small>
     </div>
 </div>
 
@@ -319,7 +321,7 @@
     let activeLayers = {};
     let currentLanguage = 'en';
 
-    // Translations for UI (simplified)
+    // Translations for UI
     const translations = {
         en: { title: "🌾 LUPANE LAND USE & WILDLIFE MONITOR", legend: "LEGEND", farmland: "Farmland / Cropland", forest: "Forest / Woodland", grassland: "Grassland", water: "Water", urban: "Urban / Built-up", corridor: "Wildlife Corridor", nationalPark: "National Park", protected: "Protected Area", farmBound: "Farm Boundaries", layersTitle: "LAYERS", lulc2010: "LAND USE LAND COVER 2010", lulc2015: "LAND USE LAND COVER 2015", lulc2020: "LAND USE LAND COVER 2020", lulc2026: "LAND USE LAND COVER 2026", lupane: "LUPANE DISTRICT", natParks: "NATIONAL PARKS", protAreas: "PROTECTED AREAS WITHIN LUPANE", farmB: "LUPANE FARM BOUNDARIES", notifMsg: "New alert: Farming expansion near wildlife zone." },
         ar: { title: "🌾 مراقبة استخدام الأراضي والحياة البرية في لوباني", legend: "الإرشادات", farmland: "الأراضي الزراعية", forest: "الغابات", grassland: "الأراضي العشبية", water: "المياه", urban: "المناطق الحضرية", corridor: "ممر الحياة البرية", nationalPark: "الحديقة الوطنية", protected: "منطقة محمية", farmBound: "حدود المزارع", layersTitle: "الطبقات", lulc2010: "غطاء الأرض 2010", lulc2015: "غطاء الأرض 2015", lulc2020: "غطاء الأرض 2020", lulc2026: "غطاء الأرض 2026", lupane: "منطقة لوباني", natParks: "الحدائق الوطنية", protAreas: "المناطق المحمية داخل لوباني", farmB: "حدود مزارع لوباني", notifMsg: "تنبيه: توسع زراعي بالقرب من منطقة الحياة البرية." },
@@ -359,49 +361,59 @@
         }).addTo(map);
 
         // Helper to load GeoJSON and store in activeLayers
-        function loadGeoJSON(name, url, style, popupProp = 'name') {
+        function loadGeoJSON(name, url, style, popupField = 'name') {
             fetch(url)
                 .then(res => res.json())
                 .then(data => {
-                    activeLayers[name] = L.geoJSON(data, { style: style, onEachFeature: (f, layer) => {
-                        if (f.properties) layer.bindPopup(`${f.properties[popupProp] || f.properties.NAME || name}`);
-                    }});
+                    activeLayers[name] = L.geoJSON(data, { 
+                        style: style, 
+                        onEachFeature: (f, layer) => {
+                            if (f.properties) {
+                                let popupText = f.properties[popupField] || f.properties.NAME || f.properties.name || name;
+                                layer.bindPopup(popupText);
+                            }
+                        }
+                    });
                 })
                 .catch(err => console.warn(`Could not load ${url}`, err));
         }
 
-        // Define each layer with its file name and style
-        // LAND USE LAND COVER 2010 (sample style – adjust colours as needed)
-        // For actual GeoTIFF LULC you need leaflet-geotiff; here we assume you have GeoJSON for LULC.
-        // Since you have TIF files for LULC, we use a placeholder – replace with geotiff plugin if needed.
-        // For now, I'll create empty groups and you can replace with actual geojson if available.
-        // Your screenshot shows GeoJSON for boundaries, parks, protected areas, farm boundaries.
-        // LULC layers (2010,2015,2020,2026) – you have GeoTIFFs; to keep it simple I add a placeholder.
-        // For full GeoTIFF support you need leaflet-geotiff plugin and load rasters.
-        // Here I use loadGeoJSON for the vector layers you have.
-        
+        // Load your actual GeoJSON files (exact names from your screenshot)
         loadGeoJSON('lupaneDistrict', 'LUPANE DISTRICT.geojson', { color: 'black', weight: 3, fillOpacity: 0 });
         loadGeoJSON('nationalParks', 'NATIONAL PARKS.geojson', { color: '#ff6600', weight: 2, fillOpacity: 0.3 });
         loadGeoJSON('protectedAreas', 'PROTECTED AREAS WITHIN LUPANE.geojson', { color: '#00ced1', weight: 2, fillOpacity: 0.3 });
+        // Farm boundaries: use the communal one (larger file) or the other
         loadGeoJSON('farmBoundaries', 'LUPANE COMMUNAL FARM BOUNDARIES.geojson', { color: '#cddc39', weight: 2, fillOpacity: 0.4 });
-        // Also load the other farm boundary if needed
-        loadGeoJSON('farmBoundariesAlt', 'LUPANE_FARM_BOUNDARY.geojson', { color: '#cddc39', weight: 2, fillOpacity: 0.4 });
-        loadGeoJSON('lulc2010', 'LUPANE LULC 2010.geojson', { color: '#f9a825', weight: 2, fillOpacity: 0.5 }); // if you have geojson
-        loadGeoJSON('lulc2015', 'LUPANE LULC 2015.geojson', { color: '#f9a825', weight: 2, fillOpacity: 0.5 });
-        loadGeoJSON('lulc2020', 'LUPANE LULC 2020.geojson', { color: '#f9a825', weight: 2, fillOpacity: 0.6 });
-        loadGeoJSON('lulc2026', 'LUPANE LULC 2026.geojson', { color: '#f9a825', weight: 2, fillOpacity: 0.7 });
+        // Also optionally load the other farm boundary if needed
+        fetch('LUPANE_FARM_BOUNDARY.geojson')
+            .then(res => res.json())
+            .then(data => {
+                if (!activeLayers.farmBoundaries) {
+                    activeLayers.farmBoundaries = L.geoJSON(data, { color: '#cddc39', weight: 2, fillOpacity: 0.4 });
+                }
+            })
+            .catch(() => console.log('LUPANE_FARM_BOUNDARY.geojson not loaded'));
+
+        // Placeholder for LULC layers (you have GeoTIFFs, but for simplicity we use empty groups)
+        // You can replace with actual GeoJSON if available, otherwise keep as placeholder.
+        activeLayers.lulc2010 = L.layerGroup();
+        activeLayers.lulc2015 = L.layerGroup();
+        activeLayers.lulc2020 = L.layerGroup();
+        activeLayers.lulc2026 = L.layerGroup();
         
-        // Wait a bit then add default visible layers (Lupane District)
+        // Add Lupane District by default after a short delay to allow loading
         setTimeout(() => {
             if (activeLayers.lupaneDistrict) activeLayers.lupaneDistrict.addTo(map);
-        }, 500);
+        }, 1000);
 
-        // Button toggles
+        // Toggle function
         function toggleLayer(name) {
-            if (!activeLayers[name]) { alert(`Layer ${name} not loaded yet`); return; }
+            if (!activeLayers[name]) { alert(`Layer ${name} not loaded yet. Check file name.`); return; }
             if (map.hasLayer(activeLayers[name])) map.removeLayer(activeLayers[name]);
             else map.addLayer(activeLayers[name]);
         }
+
+        // Button listeners
         document.getElementById('lupaneDistrictBtn').onclick = () => toggleLayer('lupaneDistrict');
         document.getElementById('nationalParksBtn').onclick = () => toggleLayer('nationalParks');
         document.getElementById('protectedAreasBtn').onclick = () => toggleLayer('protectedAreas');
@@ -411,11 +423,12 @@
         document.getElementById('lulc2020Btn').onclick = () => toggleLayer('lulc2020');
         document.getElementById('lulc2026Btn').onclick = () => toggleLayer('lulc2026');
         
-        // Menu icon: toggle layer control visibility
+        // Menu icon toggle layer control visibility
         const layerControlDiv = document.getElementById('layerControl');
         document.getElementById('menuIcon').onclick = () => {
             layerControlDiv.style.display = layerControlDiv.style.display === 'none' ? 'block' : 'none';
         };
+
         // Notification demo
         document.getElementById('notifyIcon').onclick = () => {
             const msg = translations[currentLanguage].notifMsg;
@@ -425,6 +438,7 @@
             });
             else alert(msg);
         };
+        
         // Language change
         const langSelect = document.getElementById('languageSelect');
         langSelect.addEventListener('change', (e) => {
