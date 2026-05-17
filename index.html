@@ -13,7 +13,6 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', sans-serif; overflow: hidden; }
         
-        /* LOGIN MODAL – Elephant in green forest */
         .login-modal {
             position: fixed;
             top: 0;
@@ -336,7 +335,7 @@
         map = L.map('map').setView([-18.92, 27.55], 10);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }).addTo(map);
 
-        // ---------- FALLBACK BOUNDARY ----------
+        // ---------- FALLBACK BOUNDARY (visible if GeoJSON fails) ----------
         const fallbackBoundary = L.polygon([
             [27.40, -18.80], [27.65, -18.80], [27.70, -18.90],
             [27.65, -19.05], [27.40, -19.05], [27.35, -18.95], [27.40, -18.80]
@@ -345,7 +344,7 @@
         activeLayers.lupaneDistrict = fallbackBoundary;
         activeLayers.lupaneDistrictFallback = true;
 
-        // Try real boundary
+        // Try to load real boundary
         fetch('LUPANE BOUNDARY DISTRICT.geojson')
             .then(response => {
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -360,42 +359,62 @@
                 activeLayers.lupaneDistrict = realBoundary;
                 delete activeLayers.lupaneDistrictFallback;
                 updateLegend();
+                console.log("✅ Real boundary loaded.");
             })
             .catch(err => { console.warn("Boundary file not loaded, using fallback"); updateLegend(); });
 
-        // ---------- ROADS (styled from QGIS) ----------
-        // QGIS: line color #DB1E2A, custom dash 0.66mm/2mm, round caps/joins, width 0.46mm → approx weight 2, dashArray "4,12"
+        // ---------- ROADS – EXACT QGIS STYLE ----------
         const roadsStyle = {
-            color: '#DB1E2A',
-            weight: 2,
+            color: '#DB1E2A',   // RGB 219,30,42
+            weight: 2,          // 0.46mm approx
             opacity: 1,
-            dashArray: '4, 12',
+            dashArray: '4, 12', // custom dash 0.66;2 mm -> pixel equivalent
             lineCap: 'round',
             lineJoin: 'round'
         };
         fetch('ROADS.geojson')
-            .then(r => r.json())
-            .then(data => {
-                activeLayers.roads = L.geoJSON(data, { style: roadsStyle, onEachFeature: (f, l) => l.bindPopup(f.properties.MED_DESCRI || 'Road') });
+            .then(response => {
+                if (!response.ok) throw new Error(`HTTP ${response.status} - ROADS.geojson not found`);
+                return response.json();
             })
-            .catch(e => console.warn('ROADS.geojson not loaded', e));
+            .then(data => {
+                activeLayers.roads = L.geoJSON(data, {
+                    style: roadsStyle,
+                    onEachFeature: (f, l) => {
+                        let name = f.properties.MED_DESCRI || f.properties.RTT_DESCRI || 'Road';
+                        l.bindPopup(name);
+                    }
+                });
+                console.log("✅ ROADS.geojson loaded with QGIS style (red dashed)");
+                updateLegend(); // in case already visible
+            })
+            .catch(err => console.error("❌ Could not load ROADS.geojson:", err));
 
-        // ---------- DAMS (styled from QGIS) ----------
-        // QGIS: blue fill #0000FF, outline #232323, no fill? Actually two layers: first no fill with outline, second solid fill blue.
-        // We'll use solid fill with dark outline.
+        // ---------- DAMS – EXACT QGIS STYLE ----------
         const damsStyle = {
-            color: '#232323',
+            color: '#232323',   // outline dark grey
             weight: 1,
             fillColor: '#0000FF',
             fillOpacity: 0.8,
             opacity: 1
         };
         fetch('DAM.geojson')
-            .then(r => r.json())
-            .then(data => {
-                activeLayers.dams = L.geoJSON(data, { style: damsStyle, onEachFeature: (f, l) => l.bindPopup(f.properties.DAM_NAME || 'Dam') });
+            .then(response => {
+                if (!response.ok) throw new Error(`HTTP ${response.status} - DAM.geojson not found`);
+                return response.json();
             })
-            .catch(e => console.warn('DAM.geojson not loaded', e));
+            .then(data => {
+                activeLayers.dams = L.geoJSON(data, {
+                    style: damsStyle,
+                    onEachFeature: (f, l) => {
+                        let name = f.properties.DAM_NAME || f.properties.NAME || 'Dam';
+                        l.bindPopup(name);
+                    }
+                });
+                console.log("✅ DAM.geojson loaded with QGIS style (blue fill)");
+                updateLegend();
+            })
+            .catch(err => console.error("❌ Could not load DAM.geojson:", err));
 
         // ---------- OTHER LAYERS (same as before) ----------
         function loadOtherGeoJSON(name, url, style, popupField='name') {
@@ -403,6 +422,8 @@
                 activeLayers[name] = L.geoJSON(data, { style: style, onEachFeature: (f,l)=>{
                     if(f.properties) l.bindPopup(f.properties[popupField] || f.properties.NAME || name);
                 } });
+                console.log(`✅ ${name} loaded`);
+                updateLegend();
             }).catch(e=>console.warn(`Could not load ${url}`, e));
         }
         loadOtherGeoJSON('nationalParks', 'NATIONAL PARKS.geojson', { color: '#ff6600', weight: 2, fillOpacity: 0.3 });
@@ -411,7 +432,7 @@
         loadOtherGeoJSON('rivers', 'RIVERS.geojson', { color: '#1e88e5', weight: 2, fillOpacity: 0 });
         loadOtherGeoJSON('waterLines', 'WATER LINES.geojson', { color: '#42a5f5', weight: 2, fillOpacity: 0 });
 
-        // LULC placeholders
+        // LULC placeholder groups
         activeLayers.lulc2010 = L.layerGroup();
         activeLayers.lulc2015 = L.layerGroup();
         activeLayers.lulc2020 = L.layerGroup();
@@ -419,7 +440,7 @@
 
         // ---------- TOGGLE FUNCTION ----------
         function toggleLayer(name) {
-            if(!activeLayers[name]) { alert(`Layer ${name} not loaded yet.`); return; }
+            if(!activeLayers[name]) { alert(`Layer ${name} not loaded yet. Check file name and console.`); return; }
             if(map.hasLayer(activeLayers[name])) map.removeLayer(activeLayers[name]);
             else map.addLayer(activeLayers[name]);
             updateLegend();
@@ -444,7 +465,7 @@
         document.getElementById('roadsBtn').onclick = () => toggleLayer('roads');
         document.getElementById('damsBtn').onclick = () => toggleLayer('dams');
 
-        // ---------- LEGEND (includes new layers) ----------
+        // ---------- LEGEND (updated with roads & dams) ----------
         function updateLegend() {
             const legendDiv = document.getElementById('legendPanel');
             let content = '';
