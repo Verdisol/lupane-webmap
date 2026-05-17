@@ -1,19 +1,21 @@
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Lupane Land Use & Wildlife Monitor</title>
+
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6.5.0/turf.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', sans-serif; overflow: hidden; }
-        
-        /* LOGIN MODAL – your background.jpg covers the whole page */
+
         .login-modal {
             position: fixed;
             top: 0;
@@ -29,6 +31,7 @@
             background-position: center;
             background-repeat: no-repeat;
         }
+
         .login-box {
             background: rgba(0,0,0,0.65);
             width: 450px;
@@ -38,8 +41,19 @@
             backdrop-filter: blur(4px);
             border: 2px solid #ffd700;
         }
-        .login-box h2 { color: #ffd700; margin-bottom: 15px; font-size: 24px; }
-        .welcome-msg { color: #f0f0f0; font-size: 14px; margin-bottom: 20px; }
+
+        .login-box h2 {
+            color: #ffd700;
+            margin-bottom: 15px;
+            font-size: 24px;
+        }
+
+        .welcome-msg {
+            color: #f0f0f0;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+
         .login-box input {
             width: 100%;
             padding: 12px;
@@ -49,6 +63,7 @@
             background: rgba(255,255,255,0.9);
             text-align: center;
         }
+
         .login-box button {
             background: #1a3c2c;
             color: white;
@@ -59,13 +74,27 @@
             font-size: 18px;
             font-weight: bold;
         }
-        .login-box button:hover { background: #2e7d32; }
-        .error-msg { color: #ffaaaa; margin-top: 10px; }
 
-        .map-container { display: none; height: 100vh; width: 100%; }
-        #map { height: calc(100vh - 75px); width: 100%; }
+        .login-box button:hover {
+            background: #2e7d32;
+        }
 
-        /* HEADER – same local background image, dark overlay for text readability */
+        .error-msg {
+            color: #ffaaaa;
+            margin-top: 10px;
+        }
+
+        .map-container {
+            display: none;
+            height: 100vh;
+            width: 100%;
+        }
+
+        #map {
+            height: calc(100vh - 75px);
+            width: 100%;
+        }
+
         .header {
             background-image: url('background.jpg');
             background-size: cover;
@@ -79,6 +108,7 @@
             height: 75px;
             border-bottom: 4px solid #8b5a2b;
         }
+
         .header::before {
             content: "";
             position: absolute;
@@ -89,17 +119,28 @@
             background: rgba(0,0,0,0.6);
             z-index: 0;
         }
-        .header .map-title, .header .icon-group, .header .basemap-switcher, .header > div {
+
+        .header .map-title,
+        .header .icon-group,
+        .header .basemap-switcher,
+        .header > div {
             position: relative;
             z-index: 1;
         }
+
         .map-title {
             font-size: 1.4rem;
             font-weight: bold;
             text-shadow: 1px 1px 2px #000;
             color: white;
         }
-        .icon-group { display: flex; gap: 20px; align-items: center; }
+
+        .icon-group {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
         .icon-btn {
             background: none;
             border: none;
@@ -108,6 +149,7 @@
             cursor: pointer;
             position: relative;
         }
+
         .basemap-switcher {
             background: rgba(0,0,0,0.6);
             padding: 5px 10px;
@@ -116,23 +158,18 @@
             display: flex;
             gap: 15px;
         }
+
         .basemap-switcher label {
             cursor: pointer;
             display: flex;
             align-items: center;
             gap: 5px;
         }
+
         .basemap-switcher input {
             cursor: pointer;
         }
-        .icon-btn:hover, .layer-control button:hover, .layer-control select:hover, .report-panel button:hover, #encroachBtn:hover {
-            animation: bigBlink 0.8s infinite;
-        }
-        @keyframes bigBlink {
-            0% { text-shadow: 0 0 0 #4caf50; box-shadow: 0 0 0 #4caf50; }
-            50% { text-shadow: 0 0 12px #4caf50, 0 0 20px #2e7d32; box-shadow: 0 0 15px #4caf50; }
-            100% { text-shadow: 0 0 0 #4caf50; box-shadow: 0 0 0 #4caf50; }
-        }
+
         .lang-select {
             background: #2c3e50;
             color: white;
@@ -141,6 +178,7 @@
             border-radius: 20px;
             cursor: pointer;
         }
+
         .layer-control {
             position: absolute;
             top: 90px;
@@ -152,14 +190,10 @@
             z-index: 1000;
             min-width: 220px;
             border: 2px solid #4caf50;
-            animation: blinkBorder 1.5s infinite;
         }
-        @keyframes blinkBorder {
-            0% { border-color: #4caf50; box-shadow: 0 0 0 #4caf50; }
-            50% { border-color: #a5d6a7; box-shadow: 0 0 12px #4caf50; }
-            100% { border-color: #4caf50; box-shadow: 0 0 0 #4caf50; }
-        }
-        .layer-control button, .layer-control select {
+
+        .layer-control button,
+        .layer-control select {
             display: block;
             width: 100%;
             margin: 6px 0;
@@ -171,8 +205,6 @@
             cursor: pointer;
             font-size: 12px;
         }
-        .layer-control button:hover, .layer-control select:hover { background: #1abc9c; }
-        .layer-control hr { margin: 10px 0; border-color: #aaa; }
 
         .legend {
             position: absolute;
@@ -188,7 +220,14 @@
             z-index: 1000;
             display: none;
         }
-        .legend span { display: inline-block; width: 18px; height: 18px; margin-right: 8px; border-radius: 3px; }
+
+        .legend span {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            margin-right: 8px;
+            border-radius: 3px;
+        }
 
         .report-panel {
             position: absolute;
@@ -202,96 +241,67 @@
             z-index: 1001;
             color: white;
             font-size: 13px;
-            border: 1px solid #ccc;
             display: none;
-            cursor: move;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        }
-        .report-panel .panel-header {
-            cursor: move;
-            background: rgba(0,0,0,0.5);
-            margin: -15px -15px 10px -15px;
-            padding: 10px 15px;
-            border-radius: 12px 12px 0 0;
-            font-weight: bold;
-        }
-        .report-panel input, .report-panel select, .report-panel textarea {
-            width: 100%;
-            margin: 6px 0;
-            padding: 6px;
-            border-radius: 5px;
-            border: none;
-        }
-        .report-panel button {
-            background: #d32f2f;
-            color: white;
-            border: none;
-            padding: 8px;
-            border-radius: 5px;
-            cursor: pointer;
-            width: 100%;
-            margin-top: 5px;
-        }
-        .report-panel button:hover { background: #b71c1c; }
-        .report-panel .close-btn { background: #555; margin-top: 10px; }
-        .coord-row { display: flex; justify-content: space-between; gap: 8px; margin: 6px 0; }
-        .coord-row button { flex: 1; margin-top: 0; background: #2c3e50; }
-        .coord-row button:hover { background: #1abc9c; }
-        .notification-badge {
-            position: absolute;
-            top: -8px;
-            right: -12px;
-            background: red;
-            color: white;
-            border-radius: 50%;
-            padding: 2px 6px;
-            font-size: 10px;
-            font-weight: bold;
-        }
-        @media (max-width: 700px) {
-            .layer-control { min-width: 170px; right: 10px; top: 75px; }
-            .report-panel { width: 280px; right: 10px; bottom: 10px; }
-            .map-title { font-size: 1rem; }
-            .basemap-switcher { font-size: 10px; gap: 8px; padding: 3px 6px; }
         }
     </style>
 </head>
+
 <body>
 
-<!-- LOGIN MODAL -->
 <div id="loginModal" class="login-modal">
     <div class="login-box">
         <h2>LUPANE LAND USE & WILDLIFE MONITOR</h2>
-        <div class="welcome-msg">Welcome back, please login with your credentials to access the web map.</div>
-        <input type="text" id="username" placeholder="Username" autocomplete="off">
-        <input type="password" id="password" placeholder="Password" autocomplete="off">
+
+        <div class="welcome-msg">
+            Welcome back, please login with your credentials to access the web map.
+        </div>
+
+        <input type="text" id="username" placeholder="Username">
+        <input type="password" id="password" placeholder="Password">
+
         <button id="loginBtn">Enter Map</button>
+
         <div id="loginError" class="error-msg"></div>
     </div>
 </div>
 
-<!-- MAIN MAP INTERFACE -->
 <div id="mapContainer" class="map-container">
+
     <div class="header">
+
         <div class="icon-group">
-            <button class="icon-btn" id="menuIcon"><i class="fas fa-bars"></i></button>
-            <button class="icon-btn" id="reportIcon"><i class="fas fa-edit"></i></button>
-            <button class="icon-btn" id="notifyIcon"><i class="fas fa-bell"></i><span class="notification-badge" id="notifBadge">0</span></button>
-            <select id="languageSelect" class="lang-select">
-                <option value="en">English</option><option value="ar">العربية</option><option value="zh">中文</option>
-                <option value="pt">Português</option><option value="fr">Français</option>
-            </select>
+            <button class="icon-btn" id="menuIcon">
+                <i class="fas fa-bars"></i>
+            </button>
         </div>
-        <div class="map-title">LUPANE LAND USE & WILDLIFE MONITOR</div>
+
+        <div class="map-title">
+            LUPANE LAND USE & WILDLIFE MONITOR
+        </div>
+
         <div class="basemap-switcher">
-            <label><input type="radio" name="basemap" value="map" checked> 🗺️ Map</label>
-            <label><input type="radio" name="basemap" value="satellite"> 🛰️ Satellite</label>
+            <label>
+                <input type="radio" name="basemap" value="map" checked>
+                🗺️ Map
+            </label>
+
+            <label>
+                <input type="radio" name="basemap" value="satellite">
+                🛰️ Satellite
+            </label>
         </div>
+
     </div>
+
     <div id="map"></div>
+
     <div class="legend" id="legendPanel"></div>
+
     <div class="layer-control" id="layerControl">
-        <strong>LAYERS</strong><hr>
+
+        <strong>LAYERS</strong>
+        <hr>
+
         <select id="lulcDropdown">
             <option value="">-- LAND USE LAND COVER --</option>
             <option value="2010">LAND USE LAND COVER 2010</option>
@@ -299,411 +309,363 @@
             <option value="2020">LAND USE LAND COVER 2020</option>
             <option value="2026">LAND USE LAND COVER 2026</option>
         </select>
+
         <button id="lupaneDistrictBtn">LUPANE BOUNDARY DISTRICT</button>
-        <button id="nationalParksBtn">NATIONAL PARKS</button>
-        <button id="protectedAreasBtn">PROTECTED AREAS WITHIN LUPANE</button>
-        <button id="farmBoundariesBtn">LUPANE FARM BOUNDARIES</button>
-        <button id="riversBtn">RIVERS</button>
-        <button id="waterLinesBtn">WATER LINES</button>
-        <button id="roadsBtn">ROADS (styled)</button>
+        <button id="roadsBtn">ROADS</button>
         <button id="damsBtn">DAMS</button>
-        <hr>
-        <button id="encroachBtn">CHECK FARM ENCROACHMENT</button>
+
     </div>
-    <div class="report-panel" id="reportPanel">
-        <div class="panel-header">📢 Report Human-Wildlife Conflict</div>
-        <textarea id="reportDesc" rows="2" placeholder="What happened?"></textarea>
-        <select id="damageSelect">
-            <option value="">-- Select damage level --</option>
-            <option value="low">Low</option>
-            <option value="moderate">Moderate</option>
-            <option value="high">High</option>
-            <option value="very high">Very High</option>
-        </select>
-        <div class="coord-row">
-            <button id="getLocationBtn">📍 Use My GPS</button>
-            <button id="pickMapBtn">🗺️ Pick on Map</button>
-        </div>
-        <span id="coordsDisplay" style="font-size:10px;">No location selected</span>
-        <button id="submitReportBtn">Submit Report</button>
-        <button id="closeReportBtn" class="close-btn">Close</button>
-    </div>
+
 </div>
 
 <script>
-    // ==================== LOGIN ====================
-    const loginModal = document.getElementById('loginModal');
-    const mapContainer = document.getElementById('mapContainer');
-    const loginBtn = document.getElementById('loginBtn');
-    const loginError = document.getElementById('loginError');
-    const correctUser = 'web gis', correctPass = '@2026';
 
-    loginBtn.onclick = () => {
-        const u = document.getElementById('username').value.trim();
-        const p = document.getElementById('password').value.trim();
-        if (u === correctUser && p === correctPass) {
-            loginModal.style.display = 'none';
-            mapContainer.style.display = 'block';
-            initMap();
-        } else loginError.innerText = 'Invalid username or password.';
-    };
-    document.addEventListener('keypress', e => { if(e.key==='Enter' && loginModal.style.display!=='none') loginBtn.click(); });
+const loginModal = document.getElementById('loginModal');
+const mapContainer = document.getElementById('mapContainer');
+const loginBtn = document.getElementById('loginBtn');
 
-    // ==================== GLOBAL VARIABLES ====================
-    let map, activeLayers = {};
-    let conflictMarkers = [], heatLayer;
-    let notificationCount = 0;
-    let currentSelectedLocation = null;
-    let pickingActive = false;
-    let currentBaseLayer = null;
+const correctUser = 'web gis';
+const correctPass = '@2026';
 
-    // Base layer definitions
-    const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+loginBtn.onclick = () => {
+
+    const u = document.getElementById('username').value.trim();
+    const p = document.getElementById('password').value.trim();
+
+    if (u === correctUser && p === correctPass) {
+
+        loginModal.style.display = 'none';
+        mapContainer.style.display = 'block';
+
+        initMap();
+
+    } else {
+
+        document.getElementById('loginError').innerText =
+            'Invalid username or password.';
+    }
+};
+
+let map;
+let activeLayers = {};
+let currentBaseLayer = null;
+
+const osmLayer = L.tileLayer(
+    'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    {
         attribution: '&copy; OpenStreetMap contributors'
-    });
-    const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+    }
+);
+
+const satelliteLayer = L.tileLayer(
+    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    {
+        attribution: 'Esri'
+    }
+);
+
+function switchBaseLayer(type) {
+
+    if (currentBaseLayer) {
+        map.removeLayer(currentBaseLayer);
+    }
+
+    currentBaseLayer = (type === 'map')
+        ? osmLayer
+        : satelliteLayer;
+
+    currentBaseLayer.addTo(map);
+}
+
+function initMap() {
+
+    map = L.map('map').setView([-18.92, 27.55], 10);
+
+    currentBaseLayer = osmLayer;
+    currentBaseLayer.addTo(map);
+
+    // =========================
+    // LAND USE LAND COVER PNG
+    // =========================
+
+    const imageBounds = [
+        [-19.05, 27.35],
+        [-18.80, 27.70]
+    ];
+
+    activeLayers.lulc2010 = L.imageOverlay(
+        'LAND USE LAND COVER 2010.png',
+        imageBounds,
+        { opacity: 0.8 }
+    );
+
+    activeLayers.lulc2015 = L.imageOverlay(
+        'LAND USE LAND COVER 2015.png',
+        imageBounds,
+        { opacity: 0.8 }
+    );
+
+    activeLayers.lulc2020 = L.imageOverlay(
+        'LAND USE LAND COVER 2020.png',
+        imageBounds,
+        { opacity: 0.8 }
+    );
+
+    activeLayers.lulc2026 = L.imageOverlay(
+        'LAND USE LAND COVER 2026.png',
+        imageBounds,
+        { opacity: 0.8 }
+    );
+
+    // =========================
+    // BOUNDARY
+    // =========================
+
+    fetch('LUPANE BOUNDARY DISTRICT.geojson')
+    .then(response => response.json())
+    .then(data => {
+
+        activeLayers.lupaneDistrict = L.geoJSON(data, {
+
+            style: {
+                color: '#000000',
+                weight: 3,
+                fillOpacity: 0
+            }
+
+        });
+
     });
 
-    function switchBaseLayer(type) {
-        if (currentBaseLayer) map.removeLayer(currentBaseLayer);
-        if (type === 'map') {
-            currentBaseLayer = osmLayer;
+    // =========================
+    // ROADS
+    // =========================
+
+    fetch('ROADS.geojson')
+    .then(response => response.json())
+    .then(data => {
+
+        activeLayers.roads = L.geoJSON(data, {
+
+            style: {
+                color: '#DB1E2A',
+                weight: 2,
+                dashArray: '4,12'
+            }
+
+        });
+
+    });
+
+    // =========================
+    // DAMS
+    // =========================
+
+    fetch('DAM.geojson')
+    .then(response => response.json())
+    .then(data => {
+
+        activeLayers.dams = L.geoJSON(data, {
+
+            style: {
+                color: '#232323',
+                weight: 1,
+                fillColor: '#0000FF',
+                fillOpacity: 0.8
+            }
+
+        });
+
+    });
+
+    // =========================
+    // TOGGLE FUNCTION
+    // =========================
+
+    function toggleLayer(name) {
+
+        if (!activeLayers[name]) return;
+
+        if (map.hasLayer(activeLayers[name])) {
+
+            map.removeLayer(activeLayers[name]);
+
         } else {
-            currentBaseLayer = satelliteLayer;
+
+            map.addLayer(activeLayers[name]);
         }
-        currentBaseLayer.addTo(map);
+
+        updateLegend();
     }
 
-    function initMap() {
-        // Initial base layer (OSM map)
-        map = L.map('map').setView([-18.92, 27.55], 10);
-        currentBaseLayer = osmLayer;
-        currentBaseLayer.addTo(map);
+    // =========================
+    // LULC DROPDOWN
+    // =========================
 
-        // Basemap switcher event listeners
-        const radioMap = document.querySelector('input[value="map"]');
-        const radioSat = document.querySelector('input[value="satellite"]');
-        radioMap.addEventListener('change', () => {
-            if (radioMap.checked) switchBaseLayer('map');
+    document.getElementById('lulcDropdown').onchange = (e) => {
+
+        const val = e.target.value;
+
+        ['lulc2010','lulc2015','lulc2020','lulc2026']
+        .forEach(layer => {
+
+            if (
+                activeLayers[layer] &&
+                map.hasLayer(activeLayers[layer])
+            ) {
+                map.removeLayer(activeLayers[layer]);
+            }
+
         });
-        radioSat.addEventListener('change', () => {
-            if (radioSat.checked) switchBaseLayer('satellite');
-        });
 
-        // ---------- FALLBACK BOUNDARY (visible if GeoJSON fails) ----------
-        const fallbackBoundary = L.polygon([
-            [27.40, -18.80], [27.65, -18.80], [27.70, -18.90],
-            [27.65, -19.05], [27.40, -19.05], [27.35, -18.95], [27.40, -18.80]
-        ], { color: '#e63946', weight: 4, fillOpacity: 0, dashArray: '8,8' }).addTo(map);
-        fallbackBoundary.bindPopup("Lupane District (fallback boundary)");
-        activeLayers.lupaneDistrict = fallbackBoundary;
-        activeLayers.lupaneDistrictFallback = true;
-
-        // Try to load real boundary
-        fetch('LUPANE BOUNDARY DISTRICT.geojson')
-            .then(response => {
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                return response.json();
-            })
-            .then(data => {
-                map.removeLayer(fallbackBoundary);
-                const realBoundary = L.geoJSON(data, {
-                    style: { color: '#060509', weight: 3, fillOpacity: 0 },
-                    onEachFeature: (f, l) => l.bindPopup(f.properties.DISTRICT || f.properties.NAME || 'Lupane District')
-                }).addTo(map);
-                activeLayers.lupaneDistrict = realBoundary;
-                delete activeLayers.lupaneDistrictFallback;
-                updateLegend();
-                console.log("✅ Real boundary loaded.");
-            })
-            .catch(err => { console.warn("Boundary file not loaded, using fallback"); updateLegend(); });
-
-        // ---------- ROADS – EXACT QGIS STYLE ----------
-        const roadsStyle = {
-            color: '#DB1E2A',
-            weight: 2,
-            opacity: 1,
-            dashArray: '4, 12',
-            lineCap: 'round',
-            lineJoin: 'round'
-        };
-        fetch('ROADS.geojson')
-            .then(response => {
-                if (!response.ok) throw new Error(`HTTP ${response.status} - ROADS.geojson not found`);
-                return response.json();
-            })
-            .then(data => {
-                activeLayers.roads = L.geoJSON(data, {
-                    style: roadsStyle,
-                    onEachFeature: (f, l) => {
-                        let name = f.properties.MED_DESCRI || f.properties.RTT_DESCRI || 'Road';
-                        l.bindPopup(name);
-                    }
-                });
-                console.log("✅ ROADS.geojson loaded with QGIS style (red dashed)");
-                updateLegend();
-            })
-            .catch(err => console.error("❌ Could not load ROADS.geojson:", err));
-
-        // ---------- DAMS – EXACT QGIS STYLE ----------
-        const damsStyle = {
-            color: '#232323',
-            weight: 1,
-            fillColor: '#0000FF',
-            fillOpacity: 0.8,
-            opacity: 1
-        };
-        fetch('DAM.geojson')
-            .then(response => {
-                if (!response.ok) throw new Error(`HTTP ${response.status} - DAM.geojson not found`);
-                return response.json();
-            })
-            .then(data => {
-                activeLayers.dams = L.geoJSON(data, {
-                    style: damsStyle,
-                    onEachFeature: (f, l) => {
-                        let name = f.properties.DAM_NAME || f.properties.NAME || 'Dam';
-                        l.bindPopup(name);
-                    }
-                });
-                console.log("✅ DAM.geojson loaded with QGIS style (blue fill)");
-                updateLegend();
-            })
-            .catch(err => console.error("❌ Could not load DAM.geojson:", err));
-
-        // ---------- OTHER LAYERS ----------
-        function loadOtherGeoJSON(name, url, style, popupField='name') {
-            fetch(url).then(r=>r.json()).then(data=>{
-                activeLayers[name] = L.geoJSON(data, { style: style, onEachFeature: (f,l)=>{
-                    if(f.properties) l.bindPopup(f.properties[popupField] || f.properties.NAME || name);
-                } });
-                console.log(`✅ ${name} loaded`);
-                updateLegend();
-            }).catch(e=>console.warn(`Could not load ${url}`, e));
-        }
-        loadOtherGeoJSON('nationalParks', 'NATIONAL PARKS.geojson', { color: '#ff6600', weight: 2, fillOpacity: 0.3 });
-        loadOtherGeoJSON('protectedAreas', 'PROTECTED AREAS WITHIN LUPANE.geojson', { color: '#00ced1', weight: 2, fillOpacity: 0.3 });
-        loadOtherGeoJSON('farmBoundaries', 'LUPANE COMMUNAL FARM BOUNDARIES.geojson', { color: '#cddc39', weight: 2, fillOpacity: 0.4 });
-        loadOtherGeoJSON('rivers', 'RIVERS.geojson', { color: '#1e88e5', weight: 2, fillOpacity: 0 });
-        loadOtherGeoJSON('waterLines', 'WATER LINES.geojson', { color: '#42a5f5', weight: 2, fillOpacity: 0 });
-
-        // LULC placeholders
-        activeLayers.lulc2010 = L.layerGroup();
-        activeLayers.lulc2015 = L.layerGroup();
-        activeLayers.lulc2020 = L.layerGroup();
-        activeLayers.lulc2026 = L.layerGroup();
-
-        // ---------- TOGGLE FUNCTION ----------
-        function toggleLayer(name) {
-            if(!activeLayers[name]) { alert(`Layer ${name} not loaded yet. Check file name and console.`); return; }
-            if(map.hasLayer(activeLayers[name])) map.removeLayer(activeLayers[name]);
-            else map.addLayer(activeLayers[name]);
-            updateLegend();
+        if (val === '2010') {
+            map.addLayer(activeLayers.lulc2010);
         }
 
-        // LULC dropdown
-        document.getElementById('lulcDropdown').onchange = (e) => {
-            const val = e.target.value;
-            ['lulc2010','lulc2015','lulc2020','lulc2026'].forEach(l => { if(activeLayers[l] && map.hasLayer(activeLayers[l])) map.removeLayer(activeLayers[l]); });
-            if(val === '2010') toggleLayer('lulc2010');
-            else if(val === '2015') toggleLayer('lulc2015');
-            else if(val === '2020') toggleLayer('lulc2020');
-            else if(val === '2026') toggleLayer('lulc2026');
-        };
-        // Layer buttons
-        document.getElementById('lupaneDistrictBtn').onclick = () => toggleLayer('lupaneDistrict');
-        document.getElementById('nationalParksBtn').onclick = () => toggleLayer('nationalParks');
-        document.getElementById('protectedAreasBtn').onclick = () => toggleLayer('protectedAreas');
-        document.getElementById('farmBoundariesBtn').onclick = () => toggleLayer('farmBoundaries');
-        document.getElementById('riversBtn').onclick = () => toggleLayer('rivers');
-        document.getElementById('waterLinesBtn').onclick = () => toggleLayer('waterLines');
-        document.getElementById('roadsBtn').onclick = () => toggleLayer('roads');
-        document.getElementById('damsBtn').onclick = () => toggleLayer('dams');
-
-        // ---------- LEGEND ----------
-        function updateLegend() {
-            const legendDiv = document.getElementById('legendPanel');
-            let content = '';
-            function addIfVisible(layerName, title, items) {
-                if(activeLayers[layerName] && map.hasLayer(activeLayers[layerName])) {
-                    content += `<strong>${title}</strong><br>`;
-                    items.forEach(item => { content += `<p><span style="background:${item.color};"></span> ${item.label}</p>`; });
-                    content += `<hr>`;
-                }
-            }
-            const lulcVisible = ['lulc2010','lulc2015','lulc2020','lulc2026'].some(l => activeLayers[l] && map.hasLayer(activeLayers[l]));
-            if(lulcVisible) {
-                content += `<strong>LAND COVER</strong><br>
-                    <p><span style="background:#f9a825;"></span> Farmland</p>
-                    <p><span style="background:#2e7d32;"></span> Forest</p>
-                    <p><span style="background:#8bc34a;"></span> Grassland</p>
-                    <p><span style="background:#1565c0;"></span> Water</p>
-                    <p><span style="background:#c62828;"></span> Urban</p>
-                    <p><span style="background:#757575;"></span> Bare ground</p><hr>`;
-            }
-            const isFallback = activeLayers.lupaneDistrictFallback;
-            addIfVisible('lupaneDistrict', 'LUPANE BOUNDARY DISTRICT', isFallback ? [{color:'#e63946', label:'Boundary (fallback, dashed)'}] : [{color:'#060509', label:'Boundary (solid)'}]);
-            addIfVisible('nationalParks', 'NATIONAL PARKS', [{color:'#ff6600', label:'Park area'}]);
-            addIfVisible('protectedAreas', 'PROTECTED AREAS', [{color:'#00ced1', label:'Protected zone'}]);
-            addIfVisible('farmBoundaries', 'FARM BOUNDARIES', [{color:'#cddc39', label:'Agricultural fields'}]);
-            addIfVisible('rivers', 'RIVERS', [{color:'#1e88e5', label:'River lines'}]);
-            addIfVisible('waterLines', 'WATER LINES', [{color:'#42a5f5', label:'Watercourses'}]);
-            addIfVisible('roads', 'ROADS', [{color:'#DB1E2A', label:'Roads (dashed red)'}]);
-            addIfVisible('dams', 'DAMS', [{color:'#0000FF', label:'Dam / Reservoir'}]);
-            
-            if(content !== '') {
-                legendDiv.innerHTML = content;
-                legendDiv.style.display = 'block';
-            } else {
-                legendDiv.style.display = 'none';
-            }
+        if (val === '2015') {
+            map.addLayer(activeLayers.lulc2015);
         }
 
-        // ---------- CONFLICT REPORTING (unchanged) ----------
-        let conflictPoints = [];
-        function updateHeatmap() {
-            if(heatLayer) map.removeLayer(heatLayer);
-            heatLayer = L.heatLayer(conflictPoints, { radius: 25, blur: 15, maxZoom: 17 });
-            heatLayer.addTo(map);
-        }
-        function addConflictReport(lat, lng, desc, rating) {
-            let intensity = rating==='low'?0.3 : rating==='moderate'?0.6 : rating==='high'?0.8 : 1.0;
-            conflictPoints.push([lat, lng, intensity]);
-            updateHeatmap();
-            L.marker([lat, lng]).addTo(map).bindPopup(`<b>Conflict Report</b><br>${desc}<br>Rating: ${rating}`);
-            showNotification(`New conflict report: ${desc} (${rating})`);
+        if (val === '2020') {
+            map.addLayer(activeLayers.lulc2020);
         }
 
-        // Draggable report panel
-        const reportPanel = document.getElementById('reportPanel');
-        const dragHandle = reportPanel.querySelector('.panel-header');
-        let offsetX, offsetY, startX, startY;
-        dragHandle.addEventListener('mousedown', (e) => {
-            e.preventDefault();
-            startX = e.clientX;
-            startY = e.clientY;
-            offsetX = reportPanel.offsetLeft;
-            offsetY = reportPanel.offsetTop;
-            document.addEventListener('mousemove', onMouseMove);
-            document.addEventListener('mouseup', onMouseUp);
-        });
-        function onMouseMove(e) {
-            let dx = e.clientX - startX;
-            let dy = e.clientY - startY;
-            let left = offsetX + dx;
-            let top = offsetY + dy;
-            left = Math.min(window.innerWidth - reportPanel.offsetWidth - 10, Math.max(10, left));
-            top = Math.min(window.innerHeight - reportPanel.offsetHeight - 10, Math.max(10, top));
-            reportPanel.style.left = left + 'px';
-            reportPanel.style.right = 'auto';
-            reportPanel.style.bottom = 'auto';
-            reportPanel.style.top = top + 'px';
-        }
-        function onMouseUp() {
-            document.removeEventListener('mousemove', onMouseMove);
-            document.removeEventListener('mouseup', onMouseUp);
+        if (val === '2026') {
+            map.addLayer(activeLayers.lulc2026);
         }
 
-        const reportIcon = document.getElementById('reportIcon');
-        const closeReport = document.getElementById('closeReportBtn');
-        const coordsSpan = document.getElementById('coordsDisplay');
-        let tempMarker = null;
-        function setLocation(lat, lng) {
-            currentSelectedLocation = { lat, lng };
-            coordsSpan.innerText = `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`;
-            if(tempMarker) map.removeLayer(tempMarker);
-            tempMarker = L.marker([lat, lng]).addTo(map).bindPopup('Report location').openPopup();
+        updateLegend();
+    };
+
+    // =========================
+    // BUTTONS
+    // =========================
+
+    document.getElementById('lupaneDistrictBtn').onclick =
+        () => toggleLayer('lupaneDistrict');
+
+    document.getElementById('roadsBtn').onclick =
+        () => toggleLayer('roads');
+
+    document.getElementById('damsBtn').onclick =
+        () => toggleLayer('dams');
+
+    // =========================
+    // LEGEND
+    // =========================
+
+    function updateLegend() {
+
+        const legendDiv = document.getElementById('legendPanel');
+
+        let content = '';
+
+        const lulcVisible =
+            map.hasLayer(activeLayers.lulc2010) ||
+            map.hasLayer(activeLayers.lulc2015) ||
+            map.hasLayer(activeLayers.lulc2020) ||
+            map.hasLayer(activeLayers.lulc2026);
+
+        if (lulcVisible) {
+
+            content += `
+            <strong>LAND COVER</strong><br>
+
+            <p><span style="background:#f9a825;"></span> Farmland</p>
+
+            <p><span style="background:#2e7d32;"></span> Forest</p>
+
+            <p><span style="background:#8bc34a;"></span> Grassland</p>
+
+            <p><span style="background:#1565c0;"></span> Water</p>
+
+            <p><span style="background:#c62828;"></span> Urban</p>
+
+            <p><span style="background:#757575;"></span> Bare Ground</p>
+
+            <hr>
+            `;
         }
-        document.getElementById('getLocationBtn').onclick = () => {
-            if(navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(pos => {
-                    setLocation(pos.coords.latitude, pos.coords.longitude);
-                    showNotification("GPS location captured");
-                }, err => alert("Geolocation failed"));
-            } else alert("Not supported");
-        };
-        document.getElementById('pickMapBtn').onclick = () => {
-            pickingActive = true;
-            map.getContainer().style.cursor = 'crosshair';
-            alert("Click on map to select location");
-        };
-        map.on('click', (e) => {
-            if(pickingActive) {
-                setLocation(e.latlng.lat, e.latlng.lng);
-                pickingActive = false;
-                map.getContainer().style.cursor = '';
-            }
-        });
-        document.getElementById('submitReportBtn').onclick = () => {
-            let desc = document.getElementById('reportDesc').value;
-            let damage = document.getElementById('damageSelect').value;
-            if(!desc || !damage) { alert("Fill description and damage level."); return; }
-            if(!currentSelectedLocation) { alert("Select location."); return; }
-            addConflictReport(currentSelectedLocation.lat, currentSelectedLocation.lng, desc, damage);
-            alert("Report submitted!");
-            document.getElementById('reportDesc').value = '';
-            document.getElementById('damageSelect').value = '';
-            currentSelectedLocation = null;
-            coordsSpan.innerText = "No location selected";
-            if(tempMarker) map.removeLayer(tempMarker);
-            tempMarker = null;
-            reportPanel.style.display = 'none';
-        };
-        reportIcon.onclick = () => {
-            reportPanel.style.display = 'block';
-            if (!reportPanel.style.left) {
-                reportPanel.style.right = '20px';
-                reportPanel.style.bottom = '80px';
-                reportPanel.style.left = 'auto';
-                reportPanel.style.top = 'auto';
-            }
-        };
-        closeReport.onclick = () => { reportPanel.style.display = 'none'; };
-        function showNotification(msg) {
-            if(Notification.permission === 'granted') new Notification('Lupane Monitor', { body: msg });
-            else if(Notification.permission !== 'denied') Notification.requestPermission().then(perm => { if(perm==='granted') new Notification('Lupane Monitor',{body:msg}); });
-            else alert(msg);
-            notificationCount++;
-            document.getElementById('notifBadge').innerText = notificationCount;
+
+        if (
+            activeLayers.lupaneDistrict &&
+            map.hasLayer(activeLayers.lupaneDistrict)
+        ) {
+
+            content += `
+            <strong>LUPANE DISTRICT</strong><br>
+            <p><span style="background:#000000;"></span> Boundary</p>
+            <hr>
+            `;
         }
-        document.getElementById('notifyIcon').onclick = () => { notificationCount=0; document.getElementById('notifBadge').innerText='0'; };
-        
-        // Encroachment detection
-        async function checkEncroachment() {
-            if(!activeLayers.farmBoundaries || !activeLayers.protectedAreas) { alert("Farm boundaries or protected areas not loaded"); return; }
-            let farmResp = await fetch('LUPANE COMMUNAL FARM BOUNDARIES.geojson').then(r=>r.json());
-            let protResp = await fetch('PROTECTED AREAS WITHIN LUPANE.geojson').then(r=>r.json());
-            let totalOverlapHa = 0, details = [];
-            turf.featureEach(farmResp, (farm) => {
-                let farmArea = turf.area(farm)/10000;
-                let overlap = 0;
-                turf.featureEach(protResp, (prot) => {
-                    if(turf.booleanIntersects(farm, prot)) {
-                        let inter = turf.intersect(farm, prot);
-                        if(inter) overlap += turf.area(inter)/10000;
-                    }
-                });
-                if(overlap>0.01) {
-                    totalOverlapHa += overlap;
-                    let c = turf.centroid(farm);
-                    details.push(`Farm (${farmArea.toFixed(2)} ha) overlaps ${overlap.toFixed(2)} ha at [${c.geometry.coordinates[1].toFixed(4)}, ${c.geometry.coordinates[0].toFixed(4)}]`);
-                }
-            });
-            if(totalOverlapHa>0) {
-                let msg = `⚠️ Encroachment: ${totalOverlapHa.toFixed(2)} ha farmland inside protected areas.`;
-                showNotification(msg);
-                alert(msg + "\n\n" + details.join("\n"));
-            } else alert("No significant encroachment.");
+
+        if (
+            activeLayers.roads &&
+            map.hasLayer(activeLayers.roads)
+        ) {
+
+            content += `
+            <strong>ROADS</strong><br>
+            <p><span style="background:#DB1E2A;"></span> Road Network</p>
+            <hr>
+            `;
         }
-        document.getElementById('encroachBtn').onclick = checkEncroachment;
-        document.getElementById('menuIcon').onclick = () => {
-            let panel = document.getElementById('layerControl');
-            panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-        };
-        updateHeatmap();
-        map.fitBounds([[-19.05,27.35],[-18.80,27.70]]);
+
+        if (
+            activeLayers.dams &&
+            map.hasLayer(activeLayers.dams)
+        ) {
+
+            content += `
+            <strong>DAMS</strong><br>
+            <p><span style="background:#0000FF;"></span> Dams</p>
+            <hr>
+            `;
+        }
+
+        if (content !== '') {
+
+            legendDiv.innerHTML = content;
+            legendDiv.style.display = 'block';
+
+        } else {
+
+            legendDiv.style.display = 'none';
+        }
     }
+
+    // =========================
+    // BASEMAP SWITCHER
+    // =========================
+
+    document.querySelector('input[value="map"]')
+    .addEventListener('change', () => {
+        switchBaseLayer('map');
+    });
+
+    document.querySelector('input[value="satellite"]')
+    .addEventListener('change', () => {
+        switchBaseLayer('satellite');
+    });
+
+    // =========================
+    // MENU BUTTON
+    // =========================
+
+    document.getElementById('menuIcon').onclick = () => {
+
+        let panel = document.getElementById('layerControl');
+
+        panel.style.display =
+            panel.style.display === 'none'
+            ? 'block'
+            : 'none';
+    };
+
+}
+
 </script>
+
 </body>
 </html>
+```
