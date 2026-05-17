@@ -114,7 +114,7 @@
             color: white;
             border: none;
             padding: 6px 12px;
-            border-radius: 20px;
+            borderRadius: 20px;
             cursor: pointer;
         }
         /* Layer panel – greyish transparent, blinking border */
@@ -178,7 +178,7 @@
             backdrop-filter: blur(8px);
             padding: 15px;
             border-radius: 12px;
-            width: 320px;
+            width: 340px;
             z-index: 1000;
             color: white;
             font-size: 13px;
@@ -218,6 +218,18 @@
             font-size: 10px;
             font-weight: bold;
         }
+        .coord-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            margin: 6px 0;
+        }
+        .coord-row button {
+            flex: 1;
+            margin-top: 0;
+            background: #2c3e50;
+        }
+        .coord-row button:hover { background: #1abc9c; }
         @media (max-width: 700px) {
             .layer-control { min-width: 170px; right: 10px; top: 75px; }
             .report-panel { width: 280px; right: 10px; bottom: 10px; }
@@ -291,8 +303,11 @@
             <option value="high">High</option>
             <option value="very high">Very High</option>
         </select>
-        <button id="getLocationBtn">📍 Get GPS Location</button>
-        <span id="coordsDisplay" style="font-size:10px;">No location</span>
+        <div class="coord-row">
+            <button id="getLocationBtn">📍 My GPS</button>
+            <button id="pickMapBtn">🗺️ Pick on map</button>
+        </div>
+        <span id="coordsDisplay" style="font-size:10px;">No location selected</span>
         <button id="submitReportBtn">Submit Report</button>
         <button id="closeReportBtn" class="close-btn">Close</button>
     </div>
@@ -318,14 +333,11 @@
     document.addEventListener('keypress', e => { if(e.key==='Enter' && loginModal.style.display!=='none') loginBtn.click(); });
 
     // ==================== GLOBAL VARIABLES ====================
-    let map, activeLayers = {}, currentLanguage = 'en';
+    let map, activeLayers = {};
     let conflictMarkers = [], heatLayer;
     let notificationCount = 0;
-    let userLocation = null;
-
-    // Translations (placeholder)
-    const translations = { en: { notifMsg: "New alert: " } };
-    function updateUILanguage(lang) {}
+    let currentSelectedLocation = null;   // {lat, lng}
+    let pickingActive = false;
 
     // ==================== MAP INIT ====================
     function initMap() {
@@ -427,8 +439,8 @@
             }
         }
 
-        // Heatmap and conflict reporting
-        let conflictPoints = [];
+        // ==================== CONFLICT REPORTING ====================
+        let conflictPoints = []; // [lat,lng,intensity]
         function updateHeatmap() {
             if(heatLayer) map.removeLayer(heatLayer);
             heatLayer = L.heatLayer(conflictPoints, { radius: 25, blur: 15, maxZoom: 17 });
@@ -447,30 +459,59 @@
         const reportPanel = document.getElementById('reportPanel');
         const reportIcon = document.getElementById('reportIcon');
         const closeReport = document.getElementById('closeReportBtn');
-        reportIcon.onclick = () => { reportPanel.style.display = 'block'; };
-        closeReport.onclick = () => { reportPanel.style.display = 'none'; };
-        let currentCoords = null;
+        const coordsSpan = document.getElementById('coordsDisplay');
+        let tempMarker = null;
+
+        function setLocation(lat, lng) {
+            currentSelectedLocation = { lat, lng };
+            coordsSpan.innerText = `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`;
+            if(tempMarker) map.removeLayer(tempMarker);
+            tempMarker = L.marker([lat, lng]).addTo(map).bindPopup('Report location').openPopup();
+        }
+
+        // GPS location
         document.getElementById('getLocationBtn').onclick = () => {
             if(navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(pos => {
-                    currentCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-                    document.getElementById('coordsDisplay').innerText = `Lat: ${currentCoords.lat.toFixed(4)}, Lng: ${currentCoords.lng.toFixed(4)}`;
+                    setLocation(pos.coords.latitude, pos.coords.longitude);
                     showNotification("GPS location captured");
                 }, err => alert("Geolocation failed"));
             } else alert("Geolocation not supported");
         };
+
+        // Pick on map
+        document.getElementById('pickMapBtn').onclick = () => {
+            pickingActive = true;
+            map.getContainer().style.cursor = 'crosshair';
+            alert("Click on the map to select conflict location.");
+        };
+        map.on('click', (e) => {
+            if(pickingActive) {
+                setLocation(e.latlng.lat, e.latlng.lng);
+                pickingActive = false;
+                map.getContainer().style.cursor = '';
+            }
+        });
+
         document.getElementById('submitReportBtn').onclick = () => {
             let desc = document.getElementById('reportDesc').value;
             let damage = document.getElementById('damageSelect').value;
-            if(!desc || !damage || !currentCoords) { alert("Fill description, select damage level and get GPS location first."); return; }
-            addConflictReport(currentCoords.lat, currentCoords.lng, desc, damage);
+            if(!desc || !damage) { alert("Fill description and select damage level."); return; }
+            if(!currentSelectedLocation) { alert("Please select a location using GPS or picking on map."); return; }
+            addConflictReport(currentSelectedLocation.lat, currentSelectedLocation.lng, desc, damage);
             alert("Report submitted! Marker and heat point added.");
+            // Reset form
             document.getElementById('reportDesc').value = '';
             document.getElementById('damageSelect').value = '';
-            currentCoords = null;
-            document.getElementById('coordsDisplay').innerText = "No location";
+            currentSelectedLocation = null;
+            coordsSpan.innerText = "No location selected";
+            if(tempMarker) map.removeLayer(tempMarker);
+            tempMarker = null;
             reportPanel.style.display = 'none';
         };
+
+        reportIcon.onclick = () => { reportPanel.style.display = 'block'; };
+        closeReport.onclick = () => { reportPanel.style.display = 'none'; };
 
         // Notification system
         function showNotification(msg) {
