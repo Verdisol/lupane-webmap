@@ -11,7 +11,7 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', sans-serif; overflow: hidden; }
         
-        /* LOGIN MODAL – background set via inline style for fallback control */
+        /* LOGIN MODAL – background image named 'background.jpg' (local) */
         .login-modal {
             position: fixed;
             top: 0;
@@ -22,26 +22,33 @@
             display: flex;
             justify-content: center;
             align-items: center;
+            background-image: url('background.jpg');
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
             /* No black overlay */
         }
         .login-box {
-            background: rgba(0,0,0,0.55);
-            width: 400px;
+            background: rgba(0,0,0,0.6);
+            width: 450px;
             padding: 35px;
             border-radius: 25px;
             text-align: center;
             box-shadow: 0 0 40px rgba(0,0,0,0.6);
-            backdrop-filter: blur(3px);
+            backdrop-filter: blur(4px);
             border: 2px solid #ffd700;
         }
         .login-box h2 {
             color: #ffd700;
             text-shadow: 2px 2px 8px #000;
+            margin-bottom: 15px;
+            font-size: 26px;
+        }
+        .welcome-msg {
+            color: #f0f0f0;
+            font-size: 14px;
             margin-bottom: 20px;
-            font-size: 28px;
+            text-shadow: 1px 1px 2px #000;
         }
         .login-box input {
             width: 100%;
@@ -68,7 +75,7 @@
         .login-box button:hover { background: #2e7d32; transform: scale(1.05); }
         .error-msg { color: #ffaaaa; font-size: 12px; margin-top: 10px; }
         
-        /* Map page styles (same as before) */
+        /* Map page styles (unchanged) */
         .map-container { display: none; height: 100vh; width: 100%; }
         #map { height: calc(100vh - 70px); width: 100%; }
         .header {
@@ -184,22 +191,26 @@
             .lang-select { font-size: 10px; padding: 4px 6px; }
             .legend { font-size: 9px; max-width: 170px; bottom: 10px; left: 10px; }
             .layer-control { top: 80px; right: 10px; min-width: 150px; padding: 8px; }
+            .login-box { width: 90%; padding: 25px; }
+            .welcome-msg { font-size: 12px; }
         }
     </style>
 </head>
 <body>
 
+<!-- LOGIN MODAL with local background.jpg -->
 <div id="loginModal" class="login-modal">
     <div class="login-box">
-        <h2>🌍 LUPANE MONITOR</h2>
+        <h2>🌾 Farming vs Wildlife – Lupane District</h2>
+        <div class="welcome-msg">Welcome back, please login with your credentials to access the web map.</div>
         <input type="text" id="username" placeholder="Username" autocomplete="off">
         <input type="password" id="password" placeholder="Password" autocomplete="off">
         <button id="loginBtn">Enter Map</button>
         <div id="loginError" class="error-msg"></div>
-        <p style="font-size:10px; color:#ddd; margin-top:15px;">🐘🦁🐃🐆🦏 The Big Five</p>
     </div>
 </div>
 
+<!-- MAIN MAP INTERFACE (unchanged, full functionality) -->
 <div id="mapContainer" class="map-container">
     <div class="header">
         <div class="icon-group">
@@ -248,49 +259,30 @@
 </div>
 
 <script>
-    // ---- BACKGROUND IMAGE FALLBACK ----
-    (function setLoginBackground() {
-        const modal = document.getElementById('loginModal');
-        const localImage = 'background.jpg';
-        const fallbackImage = 'https://images.unsplash.com/photo-1564760055775-d63b17a55c44?q=80&w=2073&auto=format&fit=crop';
-        
-        // Try to load the local image
-        const img = new Image();
-        img.onload = function() {
-            // Local image loaded successfully
-            modal.style.backgroundImage = `url('${localImage}')`;
-            console.log('✅ Login background: using local background.jpg');
-        };
-        img.onerror = function() {
-            // Local image failed - use fallback
-            modal.style.backgroundImage = `url('${fallbackImage}')`;
-            console.warn('⚠️ Could not load local background.jpg. Using fallback remote image. Check that background.jpg exists in the same folder and is correctly named (case-sensitive).');
-        };
-        img.src = localImage;
-    })();
-
-    // ---- LOGIN LOGIC ----
+    // ---- LOGIN WITH SPECIFIC CREDENTIALS ----
     const loginModal = document.getElementById('loginModal');
     const mapContainer = document.getElementById('mapContainer');
     const loginBtn = document.getElementById('loginBtn');
     const loginError = document.getElementById('loginError');
+    const correctUsername = 'web gis';
+    const correctPassword = '@2026';
 
     loginBtn.addEventListener('click', () => {
         const user = document.getElementById('username').value.trim();
         const pwd = document.getElementById('password').value.trim();
-        if (user !== '' && pwd !== '') {
+        if (user === correctUsername && pwd === correctPassword) {
             loginModal.style.display = 'none';
             mapContainer.style.display = 'block';
             initMap();
         } else {
-            loginError.innerText = 'Please fill both fields (any demo credentials)';
+            loginError.innerText = 'Invalid username or password.';
         }
     });
     document.addEventListener('keypress', (e) => {
         if (e.key === 'Enter' && loginModal.style.display !== 'none') loginBtn.click();
     });
 
-    // ---- MAP INITIALIZATION (simplified but complete) ----
+    // ---- MAP INITIALIZATION (full functionality) ----
     let map;
     let activeLayers = {};
     let currentLanguage = 'en';
@@ -306,10 +298,21 @@
             lupane: "LUPANE DISTRICT", natParks: "NATIONAL PARKS", protAreas: "PROTECTED AREAS WITHIN LUPANE",
             farmB: "LUPANE FARM BOUNDARIES", notifMsg: "New alert: Farming expansion near wildlife zone." 
         },
-        ar: { /* similar structure – keep full from previous */ },
-        zh: {}, pt: {}, fr: {}
+        ar: { 
+            title: "🌾 مراقبة استخدام الأراضي والحياة البرية في لوباني", legend: "الإرشادات",
+            farmland: "الأراضي الزراعية", forest: "الغابات", grassland: "الأراضي العشبية",
+            water: "المياه", urban: "المناطق الحضرية", corridor: "ممر الحياة البرية",
+            nationalPark: "الحديقة الوطنية", protected: "منطقة محمية", farmBound: "حدود المزارع",
+            layersTitle: "الطبقات", lulc2010: "غطاء الأرض 2010", lulc2015: "غطاء الأرض 2015",
+            lulc2020: "غطاء الأرض 2020", lulc2026: "غطاء الأرض 2026", lupane: "منطقة لوباني",
+            natParks: "الحدائق الوطنية", protAreas: "المناطق المحمية داخل لوباني", farmB: "حدود مزارع لوباني",
+            notifMsg: "تنبيه: توسع زراعي بالقرب من منطقة الحياة البرية."
+        },
+        zh: { title: "🌾 卢帕内土地利用与野生动物监测", legend: "图例", farmland: "农田", forest: "森林", grassland: "草地", water: "水域", urban: "城市", corridor: "野生动物廊道", nationalPark: "国家公园", protected: "保护区", farmBound: "农田边界", layersTitle: "图层", lulc2010: "土地利用 2010", lulc2015: "土地利用 2015", lulc2020: "土地利用 2020", lulc2026: "土地利用 2026", lupane: "卢帕内区", natParks: "国家公园", protAreas: "卢帕内保护区", farmB: "卢帕内农田边界", notifMsg: "新警报: 农业扩张靠近野生动物区。" },
+        pt: { title: "🌾 Monitoramento de Uso do Solo e Vida Selvagem em Lupane", legend: "LEGENDA", farmland: "Terras Agrícolas", forest: "Floresta", grassland: "Pastagem", water: "Água", urban: "Urbano", corridor: "Corredor de Vida Selvagem", nationalPark: "Parque Nacional", protected: "Área Protegida", farmBound: "Limites Agrícolas", layersTitle: "CAMADAS", lulc2010: "Uso do Solo 2010", lulc2015: "Uso do Solo 2015", lulc2020: "Uso do Solo 2020", lulc2026: "Uso do Solo 2026", lupane: "Distrito de Lupane", natParks: "Parques Nacionais", protAreas: "Áreas Protegidas em Lupane", farmB: "Limites Agrícolas de Lupane", notifMsg: "Novo alerta: Expansão agrícola perto da zona de vida selvagem." },
+        fr: { title: "🌾 Surveillance de l'utilisation des terres et de la faune à Lupane", legend: "LÉGENDE", farmland: "Terres agricoles", forest: "Forêt", grassland: "Prairie", water: "Eau", urban: "Urbain", corridor: "Couloir faunique", nationalPark: "Parc national", protected: "Zone protégée", farmBound: "Limites agricoles", layersTitle: "COUCHES", lulc2010: "Occupation du sol 2010", lulc2015: "Occupation du sol 2015", lulc2020: "Occupation du sol 2020", lulc2026: "Occupation du sol 2026", lupane: "District de Lupane", natParks: "Parcs nationaux", protAreas: "Zones protégées dans Lupane", farmB: "Limites agricoles de Lupane", notifMsg: "Nouvelle alerte: Expansion agricole près d'une zone faunique." }
     };
-    // Simplified: for brevity, we keep English only; you can copy full translation object from earlier message.
+
     function updateUILanguage(lang) {
         const t = translations[lang] || translations.en;
         document.getElementById('mapTitle').innerText = t.title;
