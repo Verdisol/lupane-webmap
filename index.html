@@ -347,26 +347,51 @@
         map = L.map('map').setView([-18.92, 27.55], 10);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }).addTo(map);
 
+        // Helper to load GeoJSON with error logging
         function loadGeoJSON(name, url, style, popupField='name') {
+            console.log(`Attempting to load: ${url}`);
             fetch(url)
                 .then(response => {
-                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    if (!response.ok) throw new Error(`HTTP ${response.status} - ${response.statusText}`);
                     return response.json();
                 })
                 .then(data => {
-                    activeLayers[name] = L.geoJSON(data, { style: style, onEachFeature: (f,l) => {
-                        if(f.properties) l.bindPopup(f.properties[popupField] || f.properties.NAME || name);
-                    } });
-                    console.log(`✅ Loaded: ${name} from ${url}`);
+                    console.log(`✅ Success: ${name} loaded. Geometry type:`, data.type);
+                    activeLayers[name] = L.geoJSON(data, { 
+                        style: style, 
+                        onEachFeature: (f, l) => {
+                            if (f.properties) l.bindPopup(f.properties[popupField] || f.properties.NAME || name);
+                        }
+                    });
                     if (name === 'lupaneDistrict') {
+                        // Replace fallback if it exists
+                        if (activeLayers.lupaneDistrictFallback) {
+                            map.removeLayer(activeLayers.lupaneDistrictFallback);
+                            delete activeLayers.lupaneDistrictFallback;
+                        }
                         activeLayers[name].addTo(map);
+                        console.log('Boundary layer added to map');
                         updateLegend();
                     }
                 })
-                .catch(err => console.warn(`❌ Could not load ${url}:`, err));
+                .catch(err => {
+                    console.error(`❌ Failed to load ${url}:`, err);
+                    if (name === 'lupaneDistrict') {
+                        // Fallback polygon: red dashed outline, visible
+                        console.warn("Using fallback polygon for Lupane District.");
+                        var fallback = L.polygon([
+                            [27.40, -18.80], [27.65, -18.80], [27.70, -18.90],
+                            [27.65, -19.05], [27.40, -19.05], [27.35, -18.95], [27.40, -18.80]
+                        ], { color: '#e63946', weight: 4, fillOpacity: 0, dashArray: '8,8' }).addTo(map);
+                        fallback.bindPopup("Lupane District (fallback boundary)");
+                        activeLayers.lupaneDistrict = fallback;
+                        activeLayers.lupaneDistrictFallback = fallback;
+                        updateLegend();
+                    }
+                });
         }
 
-        // Load all layers – BOUNDARY WITH QGIS STYLE (color #060509, solid line, weight 3)
+        // Load all layers – boundary file name exactly as you provided
         loadGeoJSON('lupaneDistrict', 'LUPANE BOUNDARY DISTRICT.geojson', { color: '#060509', weight: 3, fillOpacity: 0 });
         loadGeoJSON('nationalParks', 'NATIONAL PARKS.geojson', { color: '#ff6600', weight: 2, fillOpacity: 0.3 });
         loadGeoJSON('protectedAreas', 'PROTECTED AREAS WITHIN LUPANE.geojson', { color: '#00ced1', weight: 2, fillOpacity: 0.3 });
@@ -380,20 +405,6 @@
         activeLayers.lulc2015 = L.layerGroup();
         activeLayers.lulc2020 = L.layerGroup();
         activeLayers.lulc2026 = L.layerGroup();
-
-        // Fallback boundary (in case the file fails)
-        setTimeout(() => {
-            if (!activeLayers.lupaneDistrict || !map.hasLayer(activeLayers.lupaneDistrict)) {
-                console.warn("LUPANE BOUNDARY DISTRICT.geojson not loaded. Adding fallback polygon.");
-                var fallback = L.polygon([
-                    [27.40, -18.80], [27.65, -18.80], [27.70, -18.90],
-                    [27.65, -19.05], [27.40, -19.05], [27.35, -18.95], [27.40, -18.80]
-                ], { color: '#060509', weight: 3, fillOpacity: 0 }).addTo(map);
-                fallback.bindPopup("Lupane District (fallback boundary)");
-                activeLayers.lupaneDistrict = fallback;
-                updateLegend();
-            }
-        }, 3000);
 
         function toggleLayer(name) {
             if(!activeLayers[name]) { alert(`Layer ${name} not loaded yet. Check file name.`); return; }
@@ -421,7 +432,7 @@
         document.getElementById('waterLinesBtn').onclick = () => toggleLayer('waterLines');
         document.getElementById('roadsBtn').onclick = () => toggleLayer('roads');
 
-        // Legend builder
+        // Legend builder (shows all visible layers)
         function updateLegend() {
             const legendDiv = document.getElementById('legendPanel');
             let content = '';
@@ -442,7 +453,7 @@
                     <p><span style="background:#c62828;"></span> Urban</p>
                     <p><span style="background:#757575;"></span> Bare ground</p><hr>`;
             }
-            addIfVisible('lupaneDistrict', 'LUPANE BOUNDARY DISTRICT', [{color:'#060509', label:'Boundary (solid line)'}]);
+            addIfVisible('lupaneDistrict', 'LUPANE BOUNDARY DISTRICT', [{color:'#060509', label:'Boundary (solid)'}]);
             addIfVisible('nationalParks', 'NATIONAL PARKS', [{color:'#ff6600', label:'Park area'}]);
             addIfVisible('protectedAreas', 'PROTECTED AREAS', [{color:'#00ced1', label:'Protected zone'}]);
             addIfVisible('farmBoundaries', 'FARM BOUNDARIES', [{color:'#cddc39', label:'Agricultural fields'}]);
@@ -458,7 +469,7 @@
             }
         }
 
-        // ==================== CONFLICT REPORTING (unchanged) ====================
+        // ==================== CONFLICT REPORTING ====================
         let conflictPoints = [];
         function updateHeatmap() {
             if(heatLayer) map.removeLayer(heatLayer);
