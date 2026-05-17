@@ -13,6 +13,7 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', sans-serif; overflow: hidden; }
         
+        /* LOGIN MODAL – uses your local background.jpg */
         .login-modal {
             position: fixed;
             top: 0;
@@ -23,9 +24,9 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            background-image: url('https://images.unsplash.com/photo-1535320906930-6cf4fbb1e6a3?q=80&w=2070&auto=format&fit=crop');
+            background-image: url('background.jpg');   /* YOUR LOCAL IMAGE */
             background-size: cover;
-            background-position: center 30%;
+            background-position: center;
             background-repeat: no-repeat;
             position: relative;
         }
@@ -36,7 +37,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(34, 139, 34, 0.45);
+            background: rgba(34, 139, 34, 0.45); /* green dominant overlay */
             pointer-events: none;
             z-index: 1;
         }
@@ -78,8 +79,12 @@
         .map-container { display: none; height: 100vh; width: 100%; }
         #map { height: calc(100vh - 75px); width: 100%; }
 
+        /* HEADER – same local background image, dark overlay for text readability */
         .header {
-            background: rgba(128, 128, 128, 0.87);
+            background-image: url('background.jpg');   /* YOUR LOCAL IMAGE */
+            background-size: cover;
+            background-position: center;
+            position: relative;
             color: white;
             padding: 0 20px;
             display: flex;
@@ -87,7 +92,20 @@
             justify-content: space-between;
             height: 75px;
             border-bottom: 4px solid #8b5a2b;
-            backdrop-filter: blur(2px);
+        }
+        .header::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6); /* dark overlay for readability */
+            z-index: 0;
+        }
+        .header .map-title, .header .icon-group, .header > div {
+            position: relative;
+            z-index: 1;
         }
         .map-title {
             font-size: 1.4rem;
@@ -365,10 +383,10 @@
 
         // ---------- ROADS – EXACT QGIS STYLE ----------
         const roadsStyle = {
-            color: '#DB1E2A',   // RGB 219,30,42
-            weight: 2,          // 0.46mm approx
+            color: '#DB1E2A',
+            weight: 2,
             opacity: 1,
-            dashArray: '4, 12', // custom dash 0.66;2 mm -> pixel equivalent
+            dashArray: '4, 12',
             lineCap: 'round',
             lineJoin: 'round'
         };
@@ -386,13 +404,13 @@
                     }
                 });
                 console.log("✅ ROADS.geojson loaded with QGIS style (red dashed)");
-                updateLegend(); // in case already visible
+                updateLegend();
             })
             .catch(err => console.error("❌ Could not load ROADS.geojson:", err));
 
         // ---------- DAMS – EXACT QGIS STYLE ----------
         const damsStyle = {
-            color: '#232323',   // outline dark grey
+            color: '#232323',
             weight: 1,
             fillColor: '#0000FF',
             fillOpacity: 0.8,
@@ -416,7 +434,7 @@
             })
             .catch(err => console.error("❌ Could not load DAM.geojson:", err));
 
-        // ---------- OTHER LAYERS (same as before) ----------
+        // ---------- OTHER LAYERS ----------
         function loadOtherGeoJSON(name, url, style, popupField='name') {
             fetch(url).then(r=>r.json()).then(data=>{
                 activeLayers[name] = L.geoJSON(data, { style: style, onEachFeature: (f,l)=>{
@@ -432,7 +450,7 @@
         loadOtherGeoJSON('rivers', 'RIVERS.geojson', { color: '#1e88e5', weight: 2, fillOpacity: 0 });
         loadOtherGeoJSON('waterLines', 'WATER LINES.geojson', { color: '#42a5f5', weight: 2, fillOpacity: 0 });
 
-        // LULC placeholder groups
+        // LULC placeholders
         activeLayers.lulc2010 = L.layerGroup();
         activeLayers.lulc2015 = L.layerGroup();
         activeLayers.lulc2020 = L.layerGroup();
@@ -465,7 +483,7 @@
         document.getElementById('roadsBtn').onclick = () => toggleLayer('roads');
         document.getElementById('damsBtn').onclick = () => toggleLayer('dams');
 
-        // ---------- LEGEND (updated with roads & dams) ----------
+        // ---------- LEGEND ----------
         function updateLegend() {
             const legendDiv = document.getElementById('legendPanel');
             let content = '';
@@ -519,7 +537,7 @@
             showNotification(`New conflict report: ${desc} (${rating})`);
         }
 
-        // Draggable report panel (same as before)
+        // Draggable report panel
         const reportPanel = document.getElementById('reportPanel');
         const dragHandle = reportPanel.querySelector('.panel-header');
         let offsetX, offsetY, startX, startY;
@@ -613,7 +631,7 @@
         }
         document.getElementById('notifyIcon').onclick = () => { notificationCount=0; document.getElementById('notifBadge').innerText='0'; };
         
-        // Encroachment detection (unchanged)
+        // Encroachment detection
         async function checkEncroachment() {
             if(!activeLayers.farmBoundaries || !activeLayers.protectedAreas) { alert("Farm boundaries or protected areas not loaded"); return; }
             let farmResp = await fetch('LUPANE COMMUNAL FARM BOUNDARIES.geojson').then(r=>r.json());
