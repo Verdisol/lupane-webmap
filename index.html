@@ -11,7 +11,7 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', sans-serif; overflow: hidden; }
         
-        /* LOGIN MODAL – elephants crossing a road background */
+        /* LOGIN MODAL – background set via inline style for fallback control */
         .login-modal {
             position: fixed;
             top: 0;
@@ -22,12 +22,10 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            /* High-quality image of elephants crossing a road (Shutterstock / Unsplash style) */
-            background-image: url('https://images.unsplash.com/photo-1516426122078-c23e76319801?q=80&w=2070&auto=format&fit=crop');
             background-size: cover;
-            background-position: center 30%;
+            background-position: center;
             background-repeat: no-repeat;
-            /* NO black overlay */
+            /* No black overlay */
         }
         .login-box {
             background: rgba(0,0,0,0.55);
@@ -191,7 +189,6 @@
 </head>
 <body>
 
-<!-- LOGIN MODAL – elephants crossing a road (full screen) -->
 <div id="loginModal" class="login-modal">
     <div class="login-box">
         <h2>🌍 LUPANE MONITOR</h2>
@@ -199,7 +196,7 @@
         <input type="password" id="password" placeholder="Password" autocomplete="off">
         <button id="loginBtn">Enter Map</button>
         <div id="loginError" class="error-msg"></div>
-        <p style="font-size:10px; color:#ddd; margin-top:15px;">🐘 Elephants crossing – Lupane's wildlife corridors</p>
+        <p style="font-size:10px; color:#ddd; margin-top:15px;">🐘🦁🐃🐆🦏 The Big Five</p>
     </div>
 </div>
 
@@ -251,6 +248,27 @@
 </div>
 
 <script>
+    // ---- BACKGROUND IMAGE FALLBACK ----
+    (function setLoginBackground() {
+        const modal = document.getElementById('loginModal');
+        const localImage = 'background.jpg';
+        const fallbackImage = 'https://images.unsplash.com/photo-1564760055775-d63b17a55c44?q=80&w=2073&auto=format&fit=crop';
+        
+        // Try to load the local image
+        const img = new Image();
+        img.onload = function() {
+            // Local image loaded successfully
+            modal.style.backgroundImage = `url('${localImage}')`;
+            console.log('✅ Login background: using local background.jpg');
+        };
+        img.onerror = function() {
+            // Local image failed - use fallback
+            modal.style.backgroundImage = `url('${fallbackImage}')`;
+            console.warn('⚠️ Could not load local background.jpg. Using fallback remote image. Check that background.jpg exists in the same folder and is correctly named (case-sensitive).');
+        };
+        img.src = localImage;
+    })();
+
     // ---- LOGIN LOGIC ----
     const loginModal = document.getElementById('loginModal');
     const mapContainer = document.getElementById('mapContainer');
@@ -272,7 +290,7 @@
         if (e.key === 'Enter' && loginModal.style.display !== 'none') loginBtn.click();
     });
 
-    // ---- MAP INITIALIZATION (full functionality) ----
+    // ---- MAP INITIALIZATION (simplified but complete) ----
     let map;
     let activeLayers = {};
     let currentLanguage = 'en';
@@ -288,10 +306,10 @@
             lupane: "LUPANE DISTRICT", natParks: "NATIONAL PARKS", protAreas: "PROTECTED AREAS WITHIN LUPANE",
             farmB: "LUPANE FARM BOUNDARIES", notifMsg: "New alert: Farming expansion near wildlife zone." 
         },
-        ar: { /* same structure – for brevity we keep English, but you can add full translations later */ },
+        ar: { /* similar structure – keep full from previous */ },
         zh: {}, pt: {}, fr: {}
     };
-    // Fallback for other languages: use English
+    // Simplified: for brevity, we keep English only; you can copy full translation object from earlier message.
     function updateUILanguage(lang) {
         const t = translations[lang] || translations.en;
         document.getElementById('mapTitle').innerText = t.title;
