@@ -152,7 +152,7 @@
         .layer-control button:hover, .layer-control select:hover { background: #1abc9c; }
         .layer-control hr { margin: 10px 0; border-color: #aaa; }
 
-        /* Legend – shows multiple entries */
+        /* Legend – shows multiple entries, always visible when there is content */
         .legend {
             position: absolute;
             bottom: 20px;
@@ -165,7 +165,7 @@
             backdrop-filter: blur(4px);
             max-width: 260px;
             z-index: 1000;
-            display: none;
+            display: none; /* will be shown when content exists */
         }
         .legend span { display: inline-block; width: 18px; height: 18px; margin-right: 8px; vertical-align: middle; border-radius: 3px; }
 
@@ -357,9 +357,13 @@
         // Helper to load GeoJSON
         function loadGeoJSON(name, url, style, popupField='name') {
             fetch(url).then(r=>r.json()).then(data=>{
-                activeLayers[name] = L.geoJSON(data, { style: style, onEachFeature: (f,l)=>{
-                    if(f.properties) l.bindPopup(f.properties[popupField] || f.properties.NAME || name);
-                } });
+                activeLayers[name] = L.geoJSON(data, { 
+                    style: style, 
+                    onEachFeature: (f,l)=>{
+                        if(f.properties) l.bindPopup(f.properties[popupField] || f.properties.NAME || name);
+                    }
+                });
+                // Optionally, if layer is already visible? Not needed – toggles will call updateLegend later.
             }).catch(e=>console.warn(`Could not load ${url}`));
         }
 
@@ -373,32 +377,46 @@
         loadGeoJSON('roads', 'ROADS.geojson', { color: '#8d6e63', weight: 2, fillOpacity: 0 });
         fetch('LUPANE_FARM_BOUNDARY.geojson').then(r=>r.json()).then(d=>{ if(!activeLayers.farmBoundaries) activeLayers.farmBoundaries = L.geoJSON(d,{color:'#cddc39'}); }).catch(()=>{});
 
-        // LULC placeholder groups
-        activeLayers.lulc2010 = L.layerGroup(); activeLayers.lulc2015 = L.layerGroup();
-        activeLayers.lulc2020 = L.layerGroup(); activeLayers.lulc2026 = L.layerGroup();
+        // LULC placeholder groups (if you have actual GeoTIFFs, replace these with proper layers)
+        activeLayers.lulc2010 = L.layerGroup();
+        activeLayers.lulc2015 = L.layerGroup();
+        activeLayers.lulc2020 = L.layerGroup();
+        activeLayers.lulc2026 = L.layerGroup();
 
-        // Default: show Lupane district
-        setTimeout(() => { if(activeLayers.lupaneDistrict) activeLayers.lupaneDistrict.addTo(map); updateLegend(); }, 800);
+        // Default: show Lupane district after loading (delayed to ensure fetch completed)
+        setTimeout(() => { 
+            if(activeLayers.lupaneDistrict) {
+                activeLayers.lupaneDistrict.addTo(map);
+                updateLegend();
+            }
+        }, 1000);
 
         // Toggle function with legend update
         function toggleLayer(name) {
-            if(!activeLayers[name]) { alert(`Layer ${name} not loaded`); return; }
-            if(map.hasLayer(activeLayers[name])) map.removeLayer(activeLayers[name]);
-            else map.addLayer(activeLayers[name]);
-            updateLegend();
+            if(!activeLayers[name]) { alert(`Layer ${name} not loaded yet. Check file name and path.`); return; }
+            if(map.hasLayer(activeLayers[name])) {
+                map.removeLayer(activeLayers[name]);
+            } else {
+                map.addLayer(activeLayers[name]);
+            }
+            updateLegend(); // refresh legend after toggle
         }
 
-        // LULC dropdown
+        // LULC dropdown handling
         document.getElementById('lulcDropdown').onchange = (e) => {
             const val = e.target.value;
-            ['lulc2010','lulc2015','lulc2020','lulc2026'].forEach(l => { if(map.hasLayer(activeLayers[l])) map.removeLayer(activeLayers[l]); });
+            // remove any existing LULC layers
+            ['lulc2010','lulc2015','lulc2020','lulc2026'].forEach(l => {
+                if(activeLayers[l] && map.hasLayer(activeLayers[l])) map.removeLayer(activeLayers[l]);
+            });
             if(val === '2010') toggleLayer('lulc2010');
             else if(val === '2015') toggleLayer('lulc2015');
             else if(val === '2020') toggleLayer('lulc2020');
             else if(val === '2026') toggleLayer('lulc2026');
-            updateLegend();
+            // updateLegend will be called inside toggleLayer already
         };
-        // Layer buttons
+        
+        // Layer button event listeners
         document.getElementById('lupaneDistrictBtn').onclick = () => toggleLayer('lupaneDistrict');
         document.getElementById('nationalParksBtn').onclick = () => toggleLayer('nationalParks');
         document.getElementById('protectedAreasBtn').onclick = () => toggleLayer('protectedAreas');
@@ -407,40 +425,43 @@
         document.getElementById('waterLinesBtn').onclick = () => toggleLayer('waterLines');
         document.getElementById('roadsBtn').onclick = () => toggleLayer('roads');
 
-        // Legend – shows all visible layers
+        // Legend building function – shows all currently visible layers
         function updateLegend() {
             const legendDiv = document.getElementById('legendPanel');
             let content = '';
-            if(map.hasLayer(activeLayers.lulc2010) || map.hasLayer(activeLayers.lulc2015) || map.hasLayer(activeLayers.lulc2020) || map.hasLayer(activeLayers.lulc2026)) {
+            
+            // Helper to add section if layer is present and visible on map
+            function addIfVisible(layerName, title, items) {
+                if(activeLayers[layerName] && map.hasLayer(activeLayers[layerName])) {
+                    content += `<strong>${title}</strong><br>`;
+                    items.forEach(item => {
+                        content += `<p><span style="background:${item.color};"></span> ${item.label}</p>`;
+                    });
+                    content += `<hr>`;
+                }
+            }
+            
+            // LULC combined legend (if any LULC year is visible)
+            const lulcVisible = ['lulc2010','lulc2015','lulc2020','lulc2026'].some(l => activeLayers[l] && map.hasLayer(activeLayers[l]));
+            if(lulcVisible) {
                 content += `<strong>LAND COVER</strong><br>
                     <p><span style="background:#f9a825;"></span> Farmland</p>
                     <p><span style="background:#2e7d32;"></span> Forest</p>
                     <p><span style="background:#8bc34a;"></span> Grassland</p>
                     <p><span style="background:#1565c0;"></span> Water</p>
                     <p><span style="background:#c62828;"></span> Urban</p>
-                    <p><span style="background:#757575;"></span> Bare ground</p><hr>`;
+                    <p><span style="background:#757575;"></span> Bare ground</p>
+                    <hr>`;
             }
-            if(map.hasLayer(activeLayers.lupaneDistrict)) {
-                content += `<strong>LUPANE DISTRICT</strong><br><p><span style="background:black;"></span> Boundary</p><hr>`;
-            }
-            if(map.hasLayer(activeLayers.nationalParks)) {
-                content += `<strong>NATIONAL PARKS</strong><br><p><span style="background:#ff6600;"></span> Park area</p><hr>`;
-            }
-            if(map.hasLayer(activeLayers.protectedAreas)) {
-                content += `<strong>PROTECTED AREAS</strong><br><p><span style="background:#00ced1;"></span> Protected zone</p><hr>`;
-            }
-            if(map.hasLayer(activeLayers.farmBoundaries)) {
-                content += `<strong>FARM BOUNDARIES</strong><br><p><span style="background:#cddc39;"></span> Agricultural fields</p><hr>`;
-            }
-            if(map.hasLayer(activeLayers.rivers)) {
-                content += `<strong>RIVERS</strong><br><p><span style="background:#1e88e5;"></span> River lines</p><hr>`;
-            }
-            if(map.hasLayer(activeLayers.waterLines)) {
-                content += `<strong>WATER LINES</strong><br><p><span style="background:#42a5f5;"></span> Watercourses</p><hr>`;
-            }
-            if(map.hasLayer(activeLayers.roads)) {
-                content += `<strong>ROADS</strong><br><p><span style="background:#8d6e63;"></span> Road network</p><hr>`;
-            }
+            
+            addIfVisible('lupaneDistrict', 'LUPANE DISTRICT', [{color:'black', label:'Boundary'}]);
+            addIfVisible('nationalParks', 'NATIONAL PARKS', [{color:'#ff6600', label:'Park area'}]);
+            addIfVisible('protectedAreas', 'PROTECTED AREAS', [{color:'#00ced1', label:'Protected zone'}]);
+            addIfVisible('farmBoundaries', 'FARM BOUNDARIES', [{color:'#cddc39', label:'Agricultural fields'}]);
+            addIfVisible('rivers', 'RIVERS', [{color:'#1e88e5', label:'River lines'}]);
+            addIfVisible('waterLines', 'WATER LINES', [{color:'#42a5f5', label:'Watercourses'}]);
+            addIfVisible('roads', 'ROADS', [{color:'#8d6e63', label:'Road network'}]);
+            
             if(content !== '') {
                 legendDiv.innerHTML = content;
                 legendDiv.style.display = 'block';
