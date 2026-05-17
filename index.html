@@ -10,625 +10,93 @@
     <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6.5.0/turf.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
+        /* (all styles same as before – keep your existing CSS) */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', sans-serif; overflow: hidden; }
-        
-        /* Login modal */
-        .login-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 10000;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background-image: url('background.jpg');
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-        }
-        .login-box {
-            background: rgba(0,0,0,0.65);
-            width: 450px;
-            padding: 35px;
-            border-radius: 25px;
-            text-align: center;
-            backdrop-filter: blur(4px);
-            border: 2px solid #ffd700;
-        }
-        .login-box h2 {
-            color: #ffd700;
-            margin-bottom: 15px;
-            font-size: 24px;
-        }
-        .welcome-msg {
-            color: #f0f0f0;
-            font-size: 14px;
-            margin-bottom: 20px;
-        }
-        .login-box input {
-            width: 100%;
-            padding: 12px;
-            margin: 12px 0;
-            border: none;
-            border-radius: 40px;
-            background: rgba(255,255,255,0.9);
-            text-align: center;
-        }
-        .login-box button {
-            background: #1a3c2c;
-            color: white;
-            border: none;
-            padding: 12px 30px;
-            border-radius: 40px;
-            cursor: pointer;
-            font-size: 18px;
-            font-weight: bold;
-        }
-        .login-box button:hover { background: #2e7d32; }
-        .error-msg { color: #ffaaaa; margin-top: 10px; }
-
-        /* Main map container */
-        .map-container { display: none; height: 100vh; width: 100%; }
-        #map { height: calc(100vh - 63px); width: 100%; }
-
-        /* Header 63px, green with brown strip, no emoji */
-        .header {
-            background: #2e7d32;
-            color: white;
-            padding: 0 20px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            height: 63px;
-            border-bottom: 4px solid #8b5a2b;
-        }
-        .map-title {
-            font-size: 1.3rem;
-            font-weight: bold;
-            text-shadow: 1px 1px 2px #000;
-        }
-        .icon-group { display: flex; gap: 20px; align-items: center; }
-        .icon-btn {
-            background: none;
-            border: none;
-            color: white;
-            font-size: 24px;
-            cursor: pointer;
-            position: relative;
-            transition: 0.2s;
-        }
-        /* Blinking big shadow effect */
-        .icon-btn:hover, .layer-control button:hover, .layer-control select:hover, .report-panel button:hover, #encroachBtn:hover, .login-box button:hover {
-            animation: bigBlink 0.8s infinite;
-        }
-        @keyframes bigBlink {
-            0% { text-shadow: 0 0 0 #4caf50; box-shadow: 0 0 0 #4caf50; }
-            50% { text-shadow: 0 0 12px #4caf50, 0 0 20px #2e7d32; box-shadow: 0 0 15px #4caf50; }
-            100% { text-shadow: 0 0 0 #4caf50; box-shadow: 0 0 0 #4caf50; }
-        }
-        .lang-select {
-            background: #2c3e50;
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 20px;
-            cursor: pointer;
-        }
-        /* Layer panel – greyish transparent, blinking border */
-        .layer-control {
-            position: absolute;
-            top: 80px;
-            right: 20px;
-            background: rgba(200,200,200,0.8);
-            backdrop-filter: blur(4px);
-            padding: 12px;
-            border-radius: 10px;
-            z-index: 1000;
-            min-width: 210px;
-            border: 2px solid #4caf50;
-            animation: blinkBorder 1.5s infinite;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-        }
-        @keyframes blinkBorder {
-            0% { border-color: #4caf50; box-shadow: 0 0 0 #4caf50; }
-            50% { border-color: #a5d6a7; box-shadow: 0 0 12px #4caf50; }
-            100% { border-color: #4caf50; box-shadow: 0 0 0 #4caf50; }
-        }
-        .layer-control button, .layer-control select {
-            display: block;
-            width: 100%;
-            margin: 6px 0;
-            padding: 8px;
-            background: #2c3e50;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 12px;
-        }
-        .layer-control button:hover, .layer-control select:hover { background: #1abc9c; }
-        .layer-control hr { margin: 10px 0; border-color: #aaa; }
-
-        /* Legend – shows multiple entries, always visible when there is content */
-        .legend {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
-            background: rgba(0,0,0,0.8);
-            color: white;
-            padding: 10px;
-            border-radius: 8px;
-            font-size: 12px;
-            backdrop-filter: blur(4px);
-            max-width: 260px;
-            z-index: 1000;
-            display: none; /* will be shown when content exists */
-        }
-        .legend span { display: inline-block; width: 18px; height: 18px; margin-right: 8px; vertical-align: middle; border-radius: 3px; }
-
-        /* Report panel – draggable, greyish transparent */
-        .report-panel {
-            position: absolute;
-            bottom: 80px;
-            right: 20px;
-            background: rgba(100,100,100,0.9);
-            backdrop-filter: blur(8px);
-            padding: 15px;
-            border-radius: 12px;
-            width: 340px;
-            z-index: 1001;
-            color: white;
-            font-size: 13px;
-            border: 1px solid #ccc;
-            display: none;
-            cursor: move;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        }
-        .report-panel .panel-header {
-            cursor: move;
-            background: rgba(0,0,0,0.5);
-            margin: -15px -15px 10px -15px;
-            padding: 10px 15px;
-            border-radius: 12px 12px 0 0;
-            font-weight: bold;
-        }
-        .report-panel input, .report-panel select, .report-panel textarea {
-            width: 100%;
-            margin: 6px 0;
-            padding: 6px;
-            border-radius: 5px;
-            border: none;
-        }
-        .report-panel button {
-            background: #d32f2f;
-            color: white;
-            border: none;
-            padding: 8px;
-            border-radius: 5px;
-            cursor: pointer;
-            width: 100%;
-            margin-top: 5px;
-        }
-        .report-panel button:hover { background: #b71c1c; }
-        .report-panel .close-btn {
-            background: #555;
-            margin-top: 10px;
-        }
-        .coord-row {
-            display: flex;
-            justify-content: space-between;
-            gap: 8px;
-            margin: 6px 0;
-        }
-        .coord-row button {
-            flex: 1;
-            margin-top: 0;
-            background: #2c3e50;
-        }
-        .coord-row button:hover { background: #1abc9c; }
-        .notification-badge {
-            position: absolute;
-            top: -8px;
-            right: -12px;
-            background: red;
-            color: white;
-            border-radius: 50%;
-            padding: 2px 6px;
-            font-size: 10px;
-            font-weight: bold;
-        }
-        @media (max-width: 700px) {
-            .layer-control { min-width: 170px; right: 10px; top: 75px; }
-            .report-panel { width: 280px; right: 10px; bottom: 10px; }
-            .map-title { font-size: 1rem; }
-        }
+        .login-modal { /* ... same ... */ }
+        /* ... paste your full CSS from previous working version ... */
     </style>
 </head>
 <body>
+<!-- LOGIN MODAL (same as before) -->
+<div id="loginModal" class="login-modal">...</div>
 
-<!-- LOGIN MODAL -->
-<div id="loginModal" class="login-modal">
-    <div class="login-box">
-        <h2>LUPANE LAND USE & WILDLIFE MONITOR</h2>
-        <div class="welcome-msg">Welcome back, please login with your credentials to access the web map.</div>
-        <input type="text" id="username" placeholder="Username" autocomplete="off">
-        <input type="password" id="password" placeholder="Password" autocomplete="off">
-        <button id="loginBtn">Enter Map</button>
-        <div id="loginError" class="error-msg"></div>
-    </div>
-</div>
-
-<!-- MAIN MAP INTERFACE -->
 <div id="mapContainer" class="map-container">
-    <div class="header">
-        <div class="icon-group">
-            <button class="icon-btn" id="menuIcon"><i class="fas fa-bars"></i></button>
-            <button class="icon-btn" id="reportIcon"><i class="fas fa-edit"></i></button>
-            <button class="icon-btn" id="notifyIcon"><i class="fas fa-bell"></i><span class="notification-badge" id="notifBadge">0</span></button>
-            <select id="languageSelect" class="lang-select">
-                <option value="en">English</option><option value="ar">العربية</option><option value="zh">中文</option>
-                <option value="pt">Português</option><option value="fr">Français</option>
-            </select>
-        </div>
-        <div class="map-title" id="mapTitle">LUPANE LAND USE & WILDLIFE MONITOR</div>
-        <div style="width: 80px;"></div>
-    </div>
+    <div class="header">...</div>
     <div id="map"></div>
-
-    <!-- Legend (dynamic) -->
     <div class="legend" id="legendPanel"></div>
-
-    <!-- Layer Control -->
-    <div class="layer-control" id="layerControl">
-        <strong>LAYERS</strong><hr>
-        <select id="lulcDropdown">
-            <option value="">-- LAND USE LAND COVER --</option>
-            <option value="2010">LAND USE LAND COVER 2010</option>
-            <option value="2015">LAND USE LAND COVER 2015</option>
-            <option value="2020">LAND USE LAND COVER 2020</option>
-            <option value="2026">LAND USE LAND COVER 2026</option>
-        </select>
-        <button id="lupaneDistrictBtn">LUPANE DISTRICT</button>
-        <button id="nationalParksBtn">NATIONAL PARKS</button>
-        <button id="protectedAreasBtn">PROTECTED AREAS WITHIN LUPANE</button>
-        <button id="farmBoundariesBtn">LUPANE FARM BOUNDARIES</button>
-        <button id="riversBtn">RIVERS</button>
-        <button id="waterLinesBtn">WATER LINES</button>
-        <button id="roadsBtn">ROADS</button>
-        <hr>
-        <button id="encroachBtn">CHECK FARM ENCROACHMENT</button>
-    </div>
-
-    <!-- Report Panel (draggable) -->
-    <div class="report-panel" id="reportPanel">
-        <div class="panel-header">📢 Report Human-Wildlife Conflict</div>
-        <textarea id="reportDesc" rows="2" placeholder="What happened?"></textarea>
-        <select id="damageSelect">
-            <option value="">-- Select damage level --</option>
-            <option value="low">Low</option>
-            <option value="moderate">Moderate</option>
-            <option value="high">High</option>
-            <option value="very high">Very High</option>
-        </select>
-        <div class="coord-row">
-            <button id="getLocationBtn">📍 Use My GPS</button>
-            <button id="pickMapBtn">🗺️ Pick on Map</button>
-        </div>
-        <span id="coordsDisplay" style="font-size:10px;">No location selected</span>
-        <button id="submitReportBtn">Submit Report</button>
-        <button id="closeReportBtn" class="close-btn">Close</button>
-    </div>
+    <div class="layer-control" id="layerControl">...</div>
+    <div class="report-panel" id="reportPanel">...</div>
 </div>
 
 <script>
-    // ==================== LOGIN ====================
-    const loginModal = document.getElementById('loginModal');
-    const mapContainer = document.getElementById('mapContainer');
-    const loginBtn = document.getElementById('loginBtn');
-    const loginError = document.getElementById('loginError');
-    const correctUser = 'web gis', correctPass = '@2026';
+    // ==================== LOGIN (unchanged) ====================
+    // ... keep your login logic exactly as before ...
 
-    loginBtn.onclick = () => {
-        const u = document.getElementById('username').value.trim();
-        const p = document.getElementById('password').value.trim();
-        if (u === correctUser && p === correctPass) {
-            loginModal.style.display = 'none';
-            mapContainer.style.display = 'block';
-            initMap();
-        } else loginError.innerText = 'Invalid username or password.';
-    };
-    document.addEventListener('keypress', e => { if(e.key==='Enter' && loginModal.style.display!=='none') loginBtn.click(); });
-
-    // ==================== GLOBAL VARIABLES ====================
-    let map, activeLayers = {};
-    let conflictMarkers = [], heatLayer;
-    let notificationCount = 0;
-    let currentSelectedLocation = null;
-    let pickingActive = false;
-
-    // ==================== MAP INIT ====================
+    // ==================== MAP INIT (fixed boundary loading) ====================
     function initMap() {
         map = L.map('map').setView([-18.92, 27.55], 10);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }).addTo(map);
 
-        // Helper to load GeoJSON
         function loadGeoJSON(name, url, style, popupField='name') {
-            fetch(url).then(r=>r.json()).then(data=>{
-                activeLayers[name] = L.geoJSON(data, { 
-                    style: style, 
-                    onEachFeature: (f,l)=>{
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    return response.json();
+                })
+                .then(data => {
+                    activeLayers[name] = L.geoJSON(data, { style: style, onEachFeature: (f,l) => {
                         if(f.properties) l.bindPopup(f.properties[popupField] || f.properties.NAME || name);
+                    } });
+                    console.log(`✅ Loaded: ${name}`);
+                    // Auto-add Lupane District when loaded
+                    if (name === 'lupaneDistrict') {
+                        activeLayers[name].addTo(map);
+                        updateLegend();
                     }
-                });
-                // Optionally, if layer is already visible? Not needed – toggles will call updateLegend later.
-            }).catch(e=>console.warn(`Could not load ${url}`));
+                })
+                .catch(err => console.warn(`❌ Could not load ${url}:`, err));
         }
 
-        // Load all layers (ensure filenames match exactly)
-        loadGeoJSON('lupaneDistrict', 'LUPANE DISTRICT.geojson', { color: 'black', weight: 3, fillOpacity: 0 });
+        // Load all layers (use exact file names)
+        loadGeoJSON('lupaneDistrict', 'LUPANE DISTRICT.geojson', { color: '#e63946', weight: 4, fillOpacity: 0, dashArray: '6,6' });
         loadGeoJSON('nationalParks', 'NATIONAL PARKS.geojson', { color: '#ff6600', weight: 2, fillOpacity: 0.3 });
         loadGeoJSON('protectedAreas', 'PROTECTED AREAS WITHIN LUPANE.geojson', { color: '#00ced1', weight: 2, fillOpacity: 0.3 });
         loadGeoJSON('farmBoundaries', 'LUPANE COMMUNAL FARM BOUNDARIES.geojson', { color: '#cddc39', weight: 2, fillOpacity: 0.4 });
         loadGeoJSON('rivers', 'RIVERS.geojson', { color: '#1e88e5', weight: 2, fillOpacity: 0 });
         loadGeoJSON('waterLines', 'WATER LINES.geojson', { color: '#42a5f5', weight: 2, fillOpacity: 0 });
         loadGeoJSON('roads', 'ROADS.geojson', { color: '#8d6e63', weight: 2, fillOpacity: 0 });
-        fetch('LUPANE_FARM_BOUNDARY.geojson').then(r=>r.json()).then(d=>{ if(!activeLayers.farmBoundaries) activeLayers.farmBoundaries = L.geoJSON(d,{color:'#cddc39'}); }).catch(()=>{});
 
-        // LULC placeholder groups (if you have actual GeoTIFFs, replace these with proper layers)
+        // LULC placeholder groups
         activeLayers.lulc2010 = L.layerGroup();
         activeLayers.lulc2015 = L.layerGroup();
         activeLayers.lulc2020 = L.layerGroup();
         activeLayers.lulc2026 = L.layerGroup();
 
-        // Default: show Lupane district after loading (delayed to ensure fetch completed)
-        setTimeout(() => { 
-            if(activeLayers.lupaneDistrict) {
-                activeLayers.lupaneDistrict.addTo(map);
+        // Fallback: if after 3 seconds the Lupane boundary still isn't loaded, add a drawn polygon
+        setTimeout(() => {
+            if (!activeLayers.lupaneDistrict || !map.hasLayer(activeLayers.lupaneDistrict)) {
+                console.warn("LUPANE DISTRICT.geojson not loaded. Adding fallback polygon.");
+                var fallback = L.polygon([
+                    [27.40, -18.80], [27.65, -18.80], [27.70, -18.90],
+                    [27.65, -19.05], [27.40, -19.05], [27.35, -18.95], [27.40, -18.80]
+                ], { color: '#e63946', weight: 4, fillOpacity: 0, dashArray: '6,6' }).addTo(map);
+                fallback.bindPopup("Lupane District (fallback boundary)");
+                activeLayers.lupaneDistrict = fallback;
                 updateLegend();
             }
-        }, 1000);
+        }, 3000);
 
-        // Toggle function with legend update
+        // Toggle function & legend update (same as before)
         function toggleLayer(name) {
-            if(!activeLayers[name]) { alert(`Layer ${name} not loaded yet. Check file name and path.`); return; }
-            if(map.hasLayer(activeLayers[name])) {
-                map.removeLayer(activeLayers[name]);
-            } else {
-                map.addLayer(activeLayers[name]);
-            }
-            updateLegend(); // refresh legend after toggle
+            if(!activeLayers[name]) { alert(`Layer ${name} not loaded`); return; }
+            if(map.hasLayer(activeLayers[name])) map.removeLayer(activeLayers[name]);
+            else map.addLayer(activeLayers[name]);
+            updateLegend();
         }
 
-        // LULC dropdown handling
-        document.getElementById('lulcDropdown').onchange = (e) => {
-            const val = e.target.value;
-            // remove any existing LULC layers
-            ['lulc2010','lulc2015','lulc2020','lulc2026'].forEach(l => {
-                if(activeLayers[l] && map.hasLayer(activeLayers[l])) map.removeLayer(activeLayers[l]);
-            });
-            if(val === '2010') toggleLayer('lulc2010');
-            else if(val === '2015') toggleLayer('lulc2015');
-            else if(val === '2020') toggleLayer('lulc2020');
-            else if(val === '2026') toggleLayer('lulc2026');
-            // updateLegend will be called inside toggleLayer already
-        };
-        
-        // Layer button event listeners
-        document.getElementById('lupaneDistrictBtn').onclick = () => toggleLayer('lupaneDistrict');
-        document.getElementById('nationalParksBtn').onclick = () => toggleLayer('nationalParks');
-        document.getElementById('protectedAreasBtn').onclick = () => toggleLayer('protectedAreas');
-        document.getElementById('farmBoundariesBtn').onclick = () => toggleLayer('farmBoundaries');
-        document.getElementById('riversBtn').onclick = () => toggleLayer('rivers');
-        document.getElementById('waterLinesBtn').onclick = () => toggleLayer('waterLines');
-        document.getElementById('roadsBtn').onclick = () => toggleLayer('roads');
-
-        // Legend building function – shows all currently visible layers
-        function updateLegend() {
-            const legendDiv = document.getElementById('legendPanel');
-            let content = '';
-            
-            // Helper to add section if layer is present and visible on map
-            function addIfVisible(layerName, title, items) {
-                if(activeLayers[layerName] && map.hasLayer(activeLayers[layerName])) {
-                    content += `<strong>${title}</strong><br>`;
-                    items.forEach(item => {
-                        content += `<p><span style="background:${item.color};"></span> ${item.label}</p>`;
-                    });
-                    content += `<hr>`;
-                }
-            }
-            
-            // LULC combined legend (if any LULC year is visible)
-            const lulcVisible = ['lulc2010','lulc2015','lulc2020','lulc2026'].some(l => activeLayers[l] && map.hasLayer(activeLayers[l]));
-            if(lulcVisible) {
-                content += `<strong>LAND COVER</strong><br>
-                    <p><span style="background:#f9a825;"></span> Farmland</p>
-                    <p><span style="background:#2e7d32;"></span> Forest</p>
-                    <p><span style="background:#8bc34a;"></span> Grassland</p>
-                    <p><span style="background:#1565c0;"></span> Water</p>
-                    <p><span style="background:#c62828;"></span> Urban</p>
-                    <p><span style="background:#757575;"></span> Bare ground</p>
-                    <hr>`;
-            }
-            
-            addIfVisible('lupaneDistrict', 'LUPANE DISTRICT', [{color:'black', label:'Boundary'}]);
-            addIfVisible('nationalParks', 'NATIONAL PARKS', [{color:'#ff6600', label:'Park area'}]);
-            addIfVisible('protectedAreas', 'PROTECTED AREAS', [{color:'#00ced1', label:'Protected zone'}]);
-            addIfVisible('farmBoundaries', 'FARM BOUNDARIES', [{color:'#cddc39', label:'Agricultural fields'}]);
-            addIfVisible('rivers', 'RIVERS', [{color:'#1e88e5', label:'River lines'}]);
-            addIfVisible('waterLines', 'WATER LINES', [{color:'#42a5f5', label:'Watercourses'}]);
-            addIfVisible('roads', 'ROADS', [{color:'#8d6e63', label:'Road network'}]);
-            
-            if(content !== '') {
-                legendDiv.innerHTML = content;
-                legendDiv.style.display = 'block';
-            } else {
-                legendDiv.style.display = 'none';
-            }
-        }
-
-        // ==================== CONFLICT REPORTING ====================
-        let conflictPoints = [];
-        function updateHeatmap() {
-            if(heatLayer) map.removeLayer(heatLayer);
-            heatLayer = L.heatLayer(conflictPoints, { radius: 25, blur: 15, maxZoom: 17 });
-            heatLayer.addTo(map);
-        }
-        function addConflictReport(lat, lng, desc, rating) {
-            let intensity = rating==='low'?0.3 : rating==='moderate'?0.6 : rating==='high'?0.8 : 1.0;
-            conflictPoints.push([lat, lng, intensity]);
-            updateHeatmap();
-            let marker = L.marker([lat, lng]).addTo(map).bindPopup(`<b>Conflict Report</b><br>${desc}<br>Rating: ${rating}`);
-            conflictMarkers.push(marker);
-            showNotification(`New conflict report: ${desc} (${rating})`);
-        }
-
-        // Report panel draggable
-        const reportPanel = document.getElementById('reportPanel');
-        const dragHandle = reportPanel.querySelector('.panel-header');
-        let offsetX, offsetY, startX, startY;
-        dragHandle.addEventListener('mousedown', (e) => {
-            e.preventDefault();
-            startX = e.clientX;
-            startY = e.clientY;
-            offsetX = reportPanel.offsetLeft;
-            offsetY = reportPanel.offsetTop;
-            document.addEventListener('mousemove', onMouseMove);
-            document.addEventListener('mouseup', onMouseUp);
-        });
-        function onMouseMove(e) {
-            let dx = e.clientX - startX;
-            let dy = e.clientY - startY;
-            let left = offsetX + dx;
-            let top = offsetY + dy;
-            // constrain within window boundaries
-            left = Math.min(window.innerWidth - reportPanel.offsetWidth - 10, Math.max(10, left));
-            top = Math.min(window.innerHeight - reportPanel.offsetHeight - 10, Math.max(10, top));
-            reportPanel.style.left = left + 'px';
-            reportPanel.style.right = 'auto';
-            reportPanel.style.bottom = 'auto';
-            reportPanel.style.top = top + 'px';
-        }
-        function onMouseUp() {
-            document.removeEventListener('mousemove', onMouseMove);
-            document.removeEventListener('mouseup', onMouseUp);
-        }
-
-        const reportIcon = document.getElementById('reportIcon');
-        const closeReport = document.getElementById('closeReportBtn');
-        const coordsSpan = document.getElementById('coordsDisplay');
-        let tempMarker = null;
-
-        function setLocation(lat, lng) {
-            currentSelectedLocation = { lat, lng };
-            coordsSpan.innerText = `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`;
-            if(tempMarker) map.removeLayer(tempMarker);
-            tempMarker = L.marker([lat, lng]).addTo(map).bindPopup('Report location').openPopup();
-        }
-
-        document.getElementById('getLocationBtn').onclick = () => {
-            if(navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(pos => {
-                    setLocation(pos.coords.latitude, pos.coords.longitude);
-                    showNotification("GPS location captured");
-                }, err => alert("Geolocation failed or denied"));
-            } else alert("Geolocation not supported");
-        };
-
-        document.getElementById('pickMapBtn').onclick = () => {
-            pickingActive = true;
-            map.getContainer().style.cursor = 'crosshair';
-            alert("Click on the map to select conflict location.");
-        };
-        map.on('click', (e) => {
-            if(pickingActive) {
-                setLocation(e.latlng.lat, e.latlng.lng);
-                pickingActive = false;
-                map.getContainer().style.cursor = '';
-            }
-        });
-
-        document.getElementById('submitReportBtn').onclick = () => {
-            let desc = document.getElementById('reportDesc').value;
-            let damage = document.getElementById('damageSelect').value;
-            if(!desc || !damage) { alert("Fill description and select damage level."); return; }
-            if(!currentSelectedLocation) { alert("Please select a location using GPS or picking on map."); return; }
-            addConflictReport(currentSelectedLocation.lat, currentSelectedLocation.lng, desc, damage);
-            alert("Report submitted!");
-            document.getElementById('reportDesc').value = '';
-            document.getElementById('damageSelect').value = '';
-            currentSelectedLocation = null;
-            coordsSpan.innerText = "No location selected";
-            if(tempMarker) map.removeLayer(tempMarker);
-            tempMarker = null;
-            reportPanel.style.display = 'none';
-        };
-
-        reportIcon.onclick = () => {
-            reportPanel.style.display = 'block';
-            // reset position if needed
-            if (!reportPanel.style.left) {
-                reportPanel.style.right = '20px';
-                reportPanel.style.bottom = '80px';
-                reportPanel.style.left = 'auto';
-                reportPanel.style.top = 'auto';
-            }
-        };
-        closeReport.onclick = () => { reportPanel.style.display = 'none'; };
-
-        // Notification system
-        function showNotification(msg) {
-            if(Notification.permission === 'granted') new Notification('Lupane Monitor', { body: msg });
-            else if(Notification.permission !== 'denied') Notification.requestPermission().then(perm => { if(perm==='granted') new Notification('Lupane Monitor',{body:msg}); });
-            else alert(msg);
-            notificationCount++;
-            document.getElementById('notifBadge').innerText = notificationCount;
-        }
-        document.getElementById('notifyIcon').onclick = () => { notificationCount=0; document.getElementById('notifBadge').innerText='0'; };
-
-        // Encroachment detection
-        async function checkEncroachment() {
-            if(!activeLayers.farmBoundaries || !activeLayers.protectedAreas) { alert("Farm boundaries or protected areas not loaded"); return; }
-            let farmResp = await fetch('LUPANE COMMUNAL FARM BOUNDARIES.geojson').then(r=>r.json());
-            let protResp = await fetch('PROTECTED AREAS WITHIN LUPANE.geojson').then(r=>r.json());
-            let totalOverlapHa = 0;
-            let reportDetails = [];
-            turf.featureEach(farmResp, (farmFeature) => {
-                let farmArea = turf.area(farmFeature) / 10000;
-                let overlap = 0;
-                turf.featureEach(protResp, (protFeature) => {
-                    if(turf.booleanIntersects(farmFeature, protFeature)) {
-                        let intersection = turf.intersect(farmFeature, protFeature);
-                        if(intersection) overlap += turf.area(intersection) / 10000;
-                    }
-                });
-                if(overlap > 0.01) {
-                    totalOverlapHa += overlap;
-                    let centroid = turf.centroid(farmFeature);
-                    let coords = centroid.geometry.coordinates;
-                    reportDetails.push(`Farm (${farmArea.toFixed(2)} ha) overlaps by ${overlap.toFixed(2)} ha at [${coords[1].toFixed(4)}, ${coords[0].toFixed(4)}]`);
-                }
-            });
-            if(totalOverlapHa > 0) {
-                let msg = `⚠️ Encroachment: ${totalOverlapHa.toFixed(2)} hectares of farmland inside protected areas.`;
-                showNotification(msg);
-                alert(msg + "\n\nDetails:\n" + reportDetails.join("\n"));
-            } else {
-                alert("No significant farm encroachment detected.");
-            }
-        }
-        document.getElementById('encroachBtn').onclick = checkEncroachment;
-
-        // Menu toggle for layer control visibility
-        document.getElementById('menuIcon').onclick = () => {
-            let panel = document.getElementById('layerControl');
-            panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-        };
-        updateHeatmap();
-        map.fitBounds([[-19.05,27.35],[-18.80,27.70]]);
+        // ... rest of your toggle button assignments, legend building, report panel, etc. ...
+        // (keep everything else identical to your last working version)
     }
 </script>
 </body>
