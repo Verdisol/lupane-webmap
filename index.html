@@ -7,54 +7,41 @@
     <!-- Leaflet CSS + JS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <!-- Font Awesome for icons -->
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden; }
         
-        /* ---------- LOGIN PAGE WITH BIG FIVE BACKGROUND ---------- */
+        /* ---------- LOGIN PAGE WITH BIG FIVE BACKGROUND (FULL SCREEN) ---------- */
         .login-modal {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.75);
             z-index: 10000;
             display: flex;
             justify-content: center;
             align-items: center;
-            backdrop-filter: blur(3px);
+            /* BIG FIVE ANIMALS BACKGROUND – full screen, no black overlay */
+            background-image: url('https://images.unsplash.com/photo-1564760055775-d63b17a55c44?q=80&w=2073&auto=format&fit=crop');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
         }
+        /* Semi-transparent box for the login form (to keep text readable) */
         .login-box {
-            background: rgba(0,0,0,0.7);
+            background: rgba(0,0,0,0.65);  /* dark but transparent – shows animals behind */
             width: 400px;
             padding: 35px;
             border-radius: 25px;
             text-align: center;
             box-shadow: 0 0 40px rgba(0,0,0,0.6);
-            /* Big Five animals background image (high-res with lion, elephant, rhino, leopard, buffalo) */
-            background-image: url('https://images.unsplash.com/photo-1564760055775-d63b17a55c44?q=80&w=2073&auto=format&fit=crop');
-            background-size: cover;
-            background-position: center;
-            position: relative;
+            backdrop-filter: blur(3px);
             border: 2px solid #ffd700;
         }
-        .login-box::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.6);
-            border-radius: 25px;
-            z-index: 0;
-        }
         .login-box h2 {
-            position: relative;
-            z-index: 1;
             color: #ffd700;
             text-shadow: 2px 2px 8px #000;
             margin-bottom: 20px;
@@ -62,8 +49,6 @@
             letter-spacing: 1px;
         }
         .login-box input {
-            position: relative;
-            z-index: 1;
             width: 100%;
             padding: 12px;
             margin: 12px 0;
@@ -74,8 +59,6 @@
             text-align: center;
         }
         .login-box button {
-            position: relative;
-            z-index: 1;
             background: #1a3c2c;
             color: white;
             border: none;
@@ -92,17 +75,13 @@
             transform: scale(1.05);
         }
         .error-msg {
-            position: relative;
-            z-index: 1;
             color: #ffaaaa;
             font-size: 12px;
             margin-top: 10px;
         }
-        /* ---------- MAP PAGE ---------- */
+        /* ---------- MAP PAGE (unchanged) ---------- */
         .map-container { display: none; height: 100vh; width: 100%; }
         #map { height: calc(100vh - 70px); width: 100%; z-index: 1; }
-        
-        /* Header: bottle green + brown */
         .header {
             background: linear-gradient(135deg, #1a3c2c 0%, #8b5a2b 100%);
             color: white;
@@ -125,11 +104,7 @@
             text-shadow: 2px 2px 4px #000;
             white-space: nowrap;
         }
-        .icon-group {
-            display: flex;
-            gap: 20px;
-            align-items: center;
-        }
+        .icon-group { display: flex; gap: 20px; align-items: center; }
         .icon-btn {
             background: none;
             border: none;
@@ -230,7 +205,7 @@
 </head>
 <body>
 
-<!-- LOGIN MODAL WITH BIG FIVE BACKGROUND -->
+<!-- LOGIN MODAL – FULL SCREEN BIG FIVE BACKGROUND -->
 <div id="loginModal" class="login-modal">
     <div class="login-box">
         <h2>🌍 LUPANE MONITOR</h2>
@@ -238,7 +213,7 @@
         <input type="password" id="password" placeholder="Password" autocomplete="off">
         <button id="loginBtn">Enter Map</button>
         <div id="loginError" class="error-msg"></div>
-        <p style="position:relative; z-index:1; font-size:10px; color:#ddd; margin-top:15px;">🐘🦁🐃🐆🦏 The Big Five</p>
+        <p style="font-size:10px; color:#ddd; margin-top:15px;">🐘🦁🐃🐆🦏 The Big Five</p>
     </div>
 </div>
 
@@ -321,7 +296,6 @@
     let activeLayers = {};
     let currentLanguage = 'en';
 
-    // Translations for UI
     const translations = {
         en: { title: "🌾 LUPANE LAND USE & WILDLIFE MONITOR", legend: "LEGEND", farmland: "Farmland / Cropland", forest: "Forest / Woodland", grassland: "Grassland", water: "Water", urban: "Urban / Built-up", corridor: "Wildlife Corridor", nationalPark: "National Park", protected: "Protected Area", farmBound: "Farm Boundaries", layersTitle: "LAYERS", lulc2010: "LAND USE LAND COVER 2010", lulc2015: "LAND USE LAND COVER 2015", lulc2020: "LAND USE LAND COVER 2020", lulc2026: "LAND USE LAND COVER 2026", lupane: "LUPANE DISTRICT", natParks: "NATIONAL PARKS", protAreas: "PROTECTED AREAS WITHIN LUPANE", farmB: "LUPANE FARM BOUNDARIES", notifMsg: "New alert: Farming expansion near wildlife zone." },
         ar: { title: "🌾 مراقبة استخدام الأراضي والحياة البرية في لوباني", legend: "الإرشادات", farmland: "الأراضي الزراعية", forest: "الغابات", grassland: "الأراضي العشبية", water: "المياه", urban: "المناطق الحضرية", corridor: "ممر الحياة البرية", nationalPark: "الحديقة الوطنية", protected: "منطقة محمية", farmBound: "حدود المزارع", layersTitle: "الطبقات", lulc2010: "غطاء الأرض 2010", lulc2015: "غطاء الأرض 2015", lulc2020: "غطاء الأرض 2020", lulc2026: "غطاء الأرض 2026", lupane: "منطقة لوباني", natParks: "الحدائق الوطنية", protAreas: "المناطق المحمية داخل لوباني", farmB: "حدود مزارع لوباني", notifMsg: "تنبيه: توسع زراعي بالقرب من منطقة الحياة البرية." },
@@ -360,7 +334,6 @@
             attribution: '&copy; OpenStreetMap contributors'
         }).addTo(map);
 
-        // Helper to load GeoJSON and store in activeLayers
         function loadGeoJSON(name, url, style, popupField = 'name') {
             fetch(url)
                 .then(res => res.json())
@@ -378,13 +351,10 @@
                 .catch(err => console.warn(`Could not load ${url}`, err));
         }
 
-        // Load your actual GeoJSON files (exact names from your screenshot)
         loadGeoJSON('lupaneDistrict', 'LUPANE DISTRICT.geojson', { color: 'black', weight: 3, fillOpacity: 0 });
         loadGeoJSON('nationalParks', 'NATIONAL PARKS.geojson', { color: '#ff6600', weight: 2, fillOpacity: 0.3 });
         loadGeoJSON('protectedAreas', 'PROTECTED AREAS WITHIN LUPANE.geojson', { color: '#00ced1', weight: 2, fillOpacity: 0.3 });
-        // Farm boundaries: use the communal one (larger file) or the other
         loadGeoJSON('farmBoundaries', 'LUPANE COMMUNAL FARM BOUNDARIES.geojson', { color: '#cddc39', weight: 2, fillOpacity: 0.4 });
-        // Also optionally load the other farm boundary if needed
         fetch('LUPANE_FARM_BOUNDARY.geojson')
             .then(res => res.json())
             .then(data => {
@@ -394,26 +364,21 @@
             })
             .catch(() => console.log('LUPANE_FARM_BOUNDARY.geojson not loaded'));
 
-        // Placeholder for LULC layers (you have GeoTIFFs, but for simplicity we use empty groups)
-        // You can replace with actual GeoJSON if available, otherwise keep as placeholder.
         activeLayers.lulc2010 = L.layerGroup();
         activeLayers.lulc2015 = L.layerGroup();
         activeLayers.lulc2020 = L.layerGroup();
         activeLayers.lulc2026 = L.layerGroup();
         
-        // Add Lupane District by default after a short delay to allow loading
         setTimeout(() => {
             if (activeLayers.lupaneDistrict) activeLayers.lupaneDistrict.addTo(map);
         }, 1000);
 
-        // Toggle function
         function toggleLayer(name) {
             if (!activeLayers[name]) { alert(`Layer ${name} not loaded yet. Check file name.`); return; }
             if (map.hasLayer(activeLayers[name])) map.removeLayer(activeLayers[name]);
             else map.addLayer(activeLayers[name]);
         }
 
-        // Button listeners
         document.getElementById('lupaneDistrictBtn').onclick = () => toggleLayer('lupaneDistrict');
         document.getElementById('nationalParksBtn').onclick = () => toggleLayer('nationalParks');
         document.getElementById('protectedAreasBtn').onclick = () => toggleLayer('protectedAreas');
@@ -423,13 +388,11 @@
         document.getElementById('lulc2020Btn').onclick = () => toggleLayer('lulc2020');
         document.getElementById('lulc2026Btn').onclick = () => toggleLayer('lulc2026');
         
-        // Menu icon toggle layer control visibility
         const layerControlDiv = document.getElementById('layerControl');
         document.getElementById('menuIcon').onclick = () => {
             layerControlDiv.style.display = layerControlDiv.style.display === 'none' ? 'block' : 'none';
         };
 
-        // Notification demo
         document.getElementById('notifyIcon').onclick = () => {
             const msg = translations[currentLanguage].notifMsg;
             if (Notification.permission === 'granted') new Notification('Lupane Monitor', { body: msg });
@@ -439,7 +402,6 @@
             else alert(msg);
         };
         
-        // Language change
         const langSelect = document.getElementById('languageSelect');
         langSelect.addEventListener('change', (e) => {
             currentLanguage = e.target.value;
