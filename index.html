@@ -13,7 +13,7 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', sans-serif; overflow: hidden; }
         
-        /* LOGIN MODAL – Elephant in green forest, with green dominant overlay */
+        /* LOGIN MODAL – Elephant in green forest */
         .login-modal {
             position: fixed;
             top: 0;
@@ -24,14 +24,12 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            /* Background image: elephant in forest (Unsplash) */
             background-image: url('https://images.unsplash.com/photo-1535320906930-6cf4fbb1e6a3?q=80&w=2070&auto=format&fit=crop');
             background-size: cover;
             background-position: center 30%;
             background-repeat: no-repeat;
             position: relative;
         }
-        /* Green‑dominant overlay to mute the elephant and make green colours stronger */
         .login-modal::before {
             content: "";
             position: absolute;
@@ -39,11 +37,10 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(34, 139, 34, 0.45); /* forest green, semi‑transparent */
+            background: rgba(34, 139, 34, 0.45);
             pointer-events: none;
             z-index: 1;
         }
-        /* Ensure the login box appears above the overlay */
         .login-box {
             background: rgba(0,0,0,0.65);
             width: 450px;
@@ -79,7 +76,6 @@
         .login-box button:hover { background: #2e7d32; }
         .error-msg { color: #ffaaaa; margin-top: 10px; }
 
-        /* Rest of the CSS (same as previous) – map, header, etc. */
         .map-container { display: none; height: 100vh; width: 100%; }
         #map { height: calc(100vh - 75px); width: 100%; }
 
@@ -134,7 +130,7 @@
             padding: 12px;
             border-radius: 10px;
             z-index: 1000;
-            min-width: 210px;
+            min-width: 220px;
             border: 2px solid #4caf50;
             animation: blinkBorder 1.5s infinite;
         }
@@ -168,7 +164,7 @@
             border-radius: 8px;
             font-size: 12px;
             backdrop-filter: blur(4px);
-            max-width: 260px;
+            max-width: 280px;
             z-index: 1000;
             display: none;
         }
@@ -285,7 +281,8 @@
         <button id="farmBoundariesBtn">LUPANE FARM BOUNDARIES</button>
         <button id="riversBtn">RIVERS</button>
         <button id="waterLinesBtn">WATER LINES</button>
-        <button id="roadsBtn">ROADS</button>
+        <button id="roadsBtn">ROADS (styled)</button>
+        <button id="damsBtn">DAMS</button>
         <hr>
         <button id="encroachBtn">CHECK FARM ENCROACHMENT</button>
     </div>
@@ -339,7 +336,7 @@
         map = L.map('map').setView([-18.92, 27.55], 10);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }).addTo(map);
 
-        // Fallback boundary (red dashed)
+        // ---------- FALLBACK BOUNDARY ----------
         const fallbackBoundary = L.polygon([
             [27.40, -18.80], [27.65, -18.80], [27.70, -18.90],
             [27.65, -19.05], [27.40, -19.05], [27.35, -18.95], [27.40, -18.80]
@@ -348,31 +345,59 @@
         activeLayers.lupaneDistrict = fallbackBoundary;
         activeLayers.lupaneDistrictFallback = true;
 
-        // Try to load real GeoJSON boundary
+        // Try real boundary
         fetch('LUPANE BOUNDARY DISTRICT.geojson')
             .then(response => {
-                if (!response.ok) throw new Error(`HTTP ${response.status} - File not found`);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 return response.json();
             })
             .then(data => {
-                console.log('Real boundary loaded, replacing fallback');
                 map.removeLayer(fallbackBoundary);
                 const realBoundary = L.geoJSON(data, {
                     style: { color: '#060509', weight: 3, fillOpacity: 0 },
-                    onEachFeature: (f, l) => {
-                        if (f.properties) l.bindPopup(f.properties.DISTRICT || f.properties.NAME || 'Lupane District');
-                    }
+                    onEachFeature: (f, l) => l.bindPopup(f.properties.DISTRICT || f.properties.NAME || 'Lupane District')
                 }).addTo(map);
                 activeLayers.lupaneDistrict = realBoundary;
                 delete activeLayers.lupaneDistrictFallback;
                 updateLegend();
             })
-            .catch(err => {
-                console.error('Could not load LUPANE BOUNDARY DISTRICT.geojson:', err);
-                updateLegend();
-            });
+            .catch(err => { console.warn("Boundary file not loaded, using fallback"); updateLegend(); });
 
-        // Load other GeoJSON layers
+        // ---------- ROADS (styled from QGIS) ----------
+        // QGIS: line color #DB1E2A, custom dash 0.66mm/2mm, round caps/joins, width 0.46mm → approx weight 2, dashArray "4,12"
+        const roadsStyle = {
+            color: '#DB1E2A',
+            weight: 2,
+            opacity: 1,
+            dashArray: '4, 12',
+            lineCap: 'round',
+            lineJoin: 'round'
+        };
+        fetch('ROADS.geojson')
+            .then(r => r.json())
+            .then(data => {
+                activeLayers.roads = L.geoJSON(data, { style: roadsStyle, onEachFeature: (f, l) => l.bindPopup(f.properties.MED_DESCRI || 'Road') });
+            })
+            .catch(e => console.warn('ROADS.geojson not loaded', e));
+
+        // ---------- DAMS (styled from QGIS) ----------
+        // QGIS: blue fill #0000FF, outline #232323, no fill? Actually two layers: first no fill with outline, second solid fill blue.
+        // We'll use solid fill with dark outline.
+        const damsStyle = {
+            color: '#232323',
+            weight: 1,
+            fillColor: '#0000FF',
+            fillOpacity: 0.8,
+            opacity: 1
+        };
+        fetch('DAM.geojson')
+            .then(r => r.json())
+            .then(data => {
+                activeLayers.dams = L.geoJSON(data, { style: damsStyle, onEachFeature: (f, l) => l.bindPopup(f.properties.DAM_NAME || 'Dam') });
+            })
+            .catch(e => console.warn('DAM.geojson not loaded', e));
+
+        // ---------- OTHER LAYERS (same as before) ----------
         function loadOtherGeoJSON(name, url, style, popupField='name') {
             fetch(url).then(r=>r.json()).then(data=>{
                 activeLayers[name] = L.geoJSON(data, { style: style, onEachFeature: (f,l)=>{
@@ -385,14 +410,14 @@
         loadOtherGeoJSON('farmBoundaries', 'LUPANE COMMUNAL FARM BOUNDARIES.geojson', { color: '#cddc39', weight: 2, fillOpacity: 0.4 });
         loadOtherGeoJSON('rivers', 'RIVERS.geojson', { color: '#1e88e5', weight: 2, fillOpacity: 0 });
         loadOtherGeoJSON('waterLines', 'WATER LINES.geojson', { color: '#42a5f5', weight: 2, fillOpacity: 0 });
-        loadOtherGeoJSON('roads', 'ROADS.geojson', { color: '#8d6e63', weight: 2, fillOpacity: 0 });
 
-        // LULC placeholder groups
+        // LULC placeholders
         activeLayers.lulc2010 = L.layerGroup();
         activeLayers.lulc2015 = L.layerGroup();
         activeLayers.lulc2020 = L.layerGroup();
         activeLayers.lulc2026 = L.layerGroup();
 
+        // ---------- TOGGLE FUNCTION ----------
         function toggleLayer(name) {
             if(!activeLayers[name]) { alert(`Layer ${name} not loaded yet.`); return; }
             if(map.hasLayer(activeLayers[name])) map.removeLayer(activeLayers[name]);
@@ -400,6 +425,7 @@
             updateLegend();
         }
 
+        // LULC dropdown
         document.getElementById('lulcDropdown').onchange = (e) => {
             const val = e.target.value;
             ['lulc2010','lulc2015','lulc2020','lulc2026'].forEach(l => { if(activeLayers[l] && map.hasLayer(activeLayers[l])) map.removeLayer(activeLayers[l]); });
@@ -408,6 +434,7 @@
             else if(val === '2020') toggleLayer('lulc2020');
             else if(val === '2026') toggleLayer('lulc2026');
         };
+        // Layer buttons
         document.getElementById('lupaneDistrictBtn').onclick = () => toggleLayer('lupaneDistrict');
         document.getElementById('nationalParksBtn').onclick = () => toggleLayer('nationalParks');
         document.getElementById('protectedAreasBtn').onclick = () => toggleLayer('protectedAreas');
@@ -415,7 +442,9 @@
         document.getElementById('riversBtn').onclick = () => toggleLayer('rivers');
         document.getElementById('waterLinesBtn').onclick = () => toggleLayer('waterLines');
         document.getElementById('roadsBtn').onclick = () => toggleLayer('roads');
+        document.getElementById('damsBtn').onclick = () => toggleLayer('dams');
 
+        // ---------- LEGEND (includes new layers) ----------
         function updateLegend() {
             const legendDiv = document.getElementById('legendPanel');
             let content = '';
@@ -443,7 +472,8 @@
             addIfVisible('farmBoundaries', 'FARM BOUNDARIES', [{color:'#cddc39', label:'Agricultural fields'}]);
             addIfVisible('rivers', 'RIVERS', [{color:'#1e88e5', label:'River lines'}]);
             addIfVisible('waterLines', 'WATER LINES', [{color:'#42a5f5', label:'Watercourses'}]);
-            addIfVisible('roads', 'ROADS', [{color:'#8d6e63', label:'Road network'}]);
+            addIfVisible('roads', 'ROADS', [{color:'#DB1E2A', label:'Roads (dashed red)'}]);
+            addIfVisible('dams', 'DAMS', [{color:'#0000FF', label:'Dam / Reservoir'}]);
             
             if(content !== '') {
                 legendDiv.innerHTML = content;
@@ -453,7 +483,7 @@
             }
         }
 
-        // Conflict reporting
+        // ---------- CONFLICT REPORTING (unchanged) ----------
         let conflictPoints = [];
         function updateHeatmap() {
             if(heatLayer) map.removeLayer(heatLayer);
@@ -468,7 +498,7 @@
             showNotification(`New conflict report: ${desc} (${rating})`);
         }
 
-        // Draggable report panel
+        // Draggable report panel (same as before)
         const reportPanel = document.getElementById('reportPanel');
         const dragHandle = reportPanel.querySelector('.panel-header');
         let offsetX, offsetY, startX, startY;
@@ -561,6 +591,8 @@
             document.getElementById('notifBadge').innerText = notificationCount;
         }
         document.getElementById('notifyIcon').onclick = () => { notificationCount=0; document.getElementById('notifBadge').innerText='0'; };
+        
+        // Encroachment detection (unchanged)
         async function checkEncroachment() {
             if(!activeLayers.farmBoundaries || !activeLayers.protectedAreas) { alert("Farm boundaries or protected areas not loaded"); return; }
             let farmResp = await fetch('LUPANE COMMUNAL FARM BOUNDARIES.geojson').then(r=>r.json());
