@@ -13,6 +13,7 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', sans-serif; overflow: hidden; }
         
+        /* LOGIN MODAL – Elephant in green forest, with green dominant overlay */
         .login-modal {
             position: fixed;
             top: 0;
@@ -23,11 +24,26 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            background-image: url('background.jpg');
+            /* Background image: elephant in forest (Unsplash) */
+            background-image: url('https://images.unsplash.com/photo-1535320906930-6cf4fbb1e6a3?q=80&w=2070&auto=format&fit=crop');
             background-size: cover;
-            background-position: center;
+            background-position: center 30%;
             background-repeat: no-repeat;
+            position: relative;
         }
+        /* Green‑dominant overlay to mute the elephant and make green colours stronger */
+        .login-modal::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(34, 139, 34, 0.45); /* forest green, semi‑transparent */
+            pointer-events: none;
+            z-index: 1;
+        }
+        /* Ensure the login box appears above the overlay */
         .login-box {
             background: rgba(0,0,0,0.65);
             width: 450px;
@@ -36,6 +52,8 @@
             text-align: center;
             backdrop-filter: blur(4px);
             border: 2px solid #ffd700;
+            position: relative;
+            z-index: 2;
         }
         .login-box h2 { color: #ffd700; margin-bottom: 15px; font-size: 24px; }
         .welcome-msg { color: #f0f0f0; font-size: 14px; margin-bottom: 20px; }
@@ -61,26 +79,26 @@
         .login-box button:hover { background: #2e7d32; }
         .error-msg { color: #ffaaaa; margin-top: 10px; }
 
+        /* Rest of the CSS (same as previous) – map, header, etc. */
         .map-container { display: none; height: 100vh; width: 100%; }
         #map { height: calc(100vh - 75px); width: 100%; }
 
-        /* Header: grey with 87% transparency, text white bold */
         .header {
-            background: rgba(128, 128, 128, 0.87); /* grey, birds‑eye */
+            background: rgba(128, 128, 128, 0.87);
             color: white;
             padding: 0 20px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             height: 75px;
-            border-bottom: 4px solid #8b5a2b; /* brown strip remains */
-            backdrop-filter: blur(2px); /* optional, gives glass effect */
+            border-bottom: 4px solid #8b5a2b;
+            backdrop-filter: blur(2px);
         }
         .map-title {
             font-size: 1.4rem;
             font-weight: bold;
             text-shadow: 1px 1px 2px #000;
-            color: white;   /* white and bold already */
+            color: white;
         }
         .icon-group { display: flex; gap: 20px; align-items: center; }
         .icon-btn {
@@ -321,7 +339,7 @@
         map = L.map('map').setView([-18.92, 27.55], 10);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }).addTo(map);
 
-        // Fallback boundary (red dashed) – guaranteed visible
+        // Fallback boundary (red dashed)
         const fallbackBoundary = L.polygon([
             [27.40, -18.80], [27.65, -18.80], [27.70, -18.90],
             [27.65, -19.05], [27.40, -19.05], [27.35, -18.95], [27.40, -18.80]
@@ -351,11 +369,10 @@
             })
             .catch(err => {
                 console.error('Could not load LUPANE BOUNDARY DISTRICT.geojson:', err);
-                // fallback already on map
                 updateLegend();
             });
 
-        // Load other GeoJSON layers (these work for you)
+        // Load other GeoJSON layers
         function loadOtherGeoJSON(name, url, style, popupField='name') {
             fetch(url).then(r=>r.json()).then(data=>{
                 activeLayers[name] = L.geoJSON(data, { style: style, onEachFeature: (f,l)=>{
@@ -436,7 +453,7 @@
             }
         }
 
-        // Conflict reporting (same as before, keep full functionality)
+        // Conflict reporting
         let conflictPoints = [];
         function updateHeatmap() {
             if(heatLayer) map.removeLayer(heatLayer);
