@@ -366,8 +366,8 @@
                 .catch(err => console.warn(`❌ Could not load ${url}:`, err));
         }
 
-        // Load all layers – CORRECTED BOUNDARY FILE NAME
-        loadGeoJSON('lupaneDistrict', 'LUPANE BOUNDARY DISTRICT.geojson', { color: '#e63946', weight: 4, fillOpacity: 0, dashArray: '6,6' });
+        // Load all layers – BOUNDARY WITH QGIS STYLE (color #060509, solid line, weight 3)
+        loadGeoJSON('lupaneDistrict', 'LUPANE BOUNDARY DISTRICT.geojson', { color: '#060509', weight: 3, fillOpacity: 0 });
         loadGeoJSON('nationalParks', 'NATIONAL PARKS.geojson', { color: '#ff6600', weight: 2, fillOpacity: 0.3 });
         loadGeoJSON('protectedAreas', 'PROTECTED AREAS WITHIN LUPANE.geojson', { color: '#00ced1', weight: 2, fillOpacity: 0.3 });
         loadGeoJSON('farmBoundaries', 'LUPANE COMMUNAL FARM BOUNDARIES.geojson', { color: '#cddc39', weight: 2, fillOpacity: 0.4 });
@@ -388,7 +388,7 @@
                 var fallback = L.polygon([
                     [27.40, -18.80], [27.65, -18.80], [27.70, -18.90],
                     [27.65, -19.05], [27.40, -19.05], [27.35, -18.95], [27.40, -18.80]
-                ], { color: '#e63946', weight: 4, fillOpacity: 0, dashArray: '6,6' }).addTo(map);
+                ], { color: '#060509', weight: 3, fillOpacity: 0 }).addTo(map);
                 fallback.bindPopup("Lupane District (fallback boundary)");
                 activeLayers.lupaneDistrict = fallback;
                 updateLegend();
@@ -442,7 +442,7 @@
                     <p><span style="background:#c62828;"></span> Urban</p>
                     <p><span style="background:#757575;"></span> Bare ground</p><hr>`;
             }
-            addIfVisible('lupaneDistrict', 'LUPANE BOUNDARY DISTRICT', [{color:'#e63946', label:'Boundary (dashed)'}]);
+            addIfVisible('lupaneDistrict', 'LUPANE BOUNDARY DISTRICT', [{color:'#060509', label:'Boundary (solid line)'}]);
             addIfVisible('nationalParks', 'NATIONAL PARKS', [{color:'#ff6600', label:'Park area'}]);
             addIfVisible('protectedAreas', 'PROTECTED AREAS', [{color:'#00ced1', label:'Protected zone'}]);
             addIfVisible('farmBoundaries', 'FARM BOUNDARIES', [{color:'#cddc39', label:'Agricultural fields'}]);
