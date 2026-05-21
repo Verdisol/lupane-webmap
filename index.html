@@ -262,12 +262,42 @@
             font-size: 10px;
             font-weight: bold;
         }
+        /* Encroachment results dialog */
+        .encroachment-dialog {
+            position: absolute;
+            top: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 400px;
+            background: rgba(0,0,0,0.9);
+            backdrop-filter: blur(8px);
+            border-radius: 12px;
+            color: white;
+            padding: 15px;
+            z-index: 2000;
+            display: none;
+            border: 2px solid #ff6600;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+        .encroachment-dialog h4 { margin: 0 0 10px 0; text-align: center; }
+        .encroachment-dialog p { margin: 5px 0; }
+        .encroachment-dialog button {
+            background: #d32f2f;
+            border: none;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            float: right;
+        }
+        .encroachment-dialog canvas { max-height: 200px; margin-top: 10px; }
         @media (max-width: 700px) {
             .layer-control { min-width: 200px; right: 10px; top: 75px; }
             .report-panel { width: 280px; right: 10px; bottom: 10px; }
             .graphs-panel { width: 300px; left: 10px; top: 75px; }
             .map-title { font-size: 1rem; }
             .basemap-switcher { font-size: 10px; gap: 8px; padding: 3px 6px; }
+            .encroachment-dialog { width: 300px; top: 80px; }
         }
     </style>
 </head>
@@ -371,12 +401,19 @@
         <div class="graph-container"><canvas id="barComparisonChart" width="400" height="200"></canvas></div>
         <p style="font-size:10px; text-align:center;">Data source: lulc_stats.csv</p>
     </div>
+    <!-- Encroachment results dialog -->
+    <div id="encroachmentDialog" class="encroachment-dialog">
+        <button id="closeEncroachDialog">✖</button>
+        <h4>🌾 Farm Encroachment Report</h4>
+        <div id="encroachmentStats"></div>
+        <canvas id="encroachChart" width="300" height="150"></canvas>
+    </div>
 </div>
 
 <script>
     // ==================== LOGIN ====================
     const loginModal = document.getElementById('loginModal');
-    const mapContainer = document.getElementById('mapContainer');
+    const mapContainer = getElementById('mapContainer');
     const loginBtn = document.getElementById('loginBtn');
     const loginError = document.getElementById('loginError');
     const correctUser = 'web gis', correctPass = '@2026';
@@ -400,6 +437,7 @@
     let pickingActive = false;
     let currentBaseLayer = null;
     let currentLulcLayer = null;
+    let encroachChart = null; // Chart instance for encroachment
 
     // Basemaps
     const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' });
@@ -411,7 +449,7 @@
         currentBaseLayer.addTo(map);
     }
 
-    // LULC PNG bounds (corrected based on world file)
+    // LULC PNG bounds
     const lupaneBounds = [[-19.5664, 27.0994], [-18.1749, 28.6704]];
 
     function loadLulcPng(year, pngUrl) {
@@ -532,6 +570,122 @@
         } catch(err) { alert('PDF export failed'); } finally { element.style.overflow = originalOverflow; }
     }
 
+    // ==================== ENCROACHMENT CALCULATION ====================
+    async function calculateEncroachment() {
+        const farmYear = document.getElementById('farmDropdown').value;
+        const forestYear = document.getElementById('forestDropdown').value;
+        
+        if (!farmYear) {
+            alert('Please select a farm year from the dropdown first.');
+            return;
+        }
+        
+        // Fetch farm GeoJSON
+        const farmUrl = `FARMS_${farmYear}.geojson`;
+        let farmData;
+        try {
+            const resp = await fetch(farmUrl);
+            if (!resp.ok) throw new Error(`Farm file ${farmUrl} not found`);
+            farmData = await resp.json();
+        } catch (err) {
+            alert(`Could not load farm boundaries: ${err.message}`);
+            return;
+        }
+        
+        // Fetch protected areas
+        let protectedData;
+        try {
+            const resp = await fetch('PROTECTED AREAS WITHIN LUPANE.geojson');
+            if (!resp.ok) throw new Error('Protected areas file not found');
+            protectedData = await resp.json();
+        } catch (err) {
+            alert(`Could not load protected areas: ${err.message}`);
+            return;
+        }
+        
+        // Fetch forest if a year is selected
+        let forestData = null;
+        if (forestYear) {
+            const forestUrl = `FOREST_${forestYear}.geojson`;
+            try {
+                const resp = await fetch(forestUrl);
+                if (resp.ok) forestData = await resp.json();
+                else console.warn(`Forest file ${forestUrl} not found, skipping forest encroachment`);
+            } catch (err) { console.warn('Forest layer not loaded', err); }
+        }
+        
+        // Compute total farm area and overlaps using Turf.js
+        let totalFarmArea = 0;
+        let areaInProtected = 0;
+        let areaInForest = 0;
+        
+        // Iterate over farm features
+        turf.featureEach(farmData, (farmFeature) => {
+            const farmArea = turf.area(farmFeature) / 10000; // hectares
+            totalFarmArea += farmArea;
+            
+            // Check intersection with protected areas
+            turf.featureEach(protectedData, (protFeature) => {
+                if (turf.booleanIntersects(farmFeature, protFeature)) {
+                    const intersection = turf.intersect(farmFeature, protFeature);
+                    if (intersection) areaInProtected += turf.area(intersection) / 10000;
+                }
+            });
+            
+            // Check intersection with forest if available
+            if (forestData) {
+                turf.featureEach(forestData, (forestFeature) => {
+                    if (turf.booleanIntersects(farmFeature, forestFeature)) {
+                        const intersection = turf.intersect(farmFeature, forestFeature);
+                        if (intersection) areaInForest += turf.area(intersection) / 10000;
+                    }
+                });
+            }
+        });
+        
+        // Avoid double counting if farm overlaps both protected and forest? We'll show both separately.
+        const percentProtected = totalFarmArea > 0 ? (areaInProtected / totalFarmArea * 100).toFixed(2) : 0;
+        const percentForest = totalFarmArea > 0 ? (areaInForest / totalFarmArea * 100).toFixed(2) : 0;
+        
+        // Prepare stats HTML
+        const statsDiv = document.getElementById('encroachmentStats');
+        statsDiv.innerHTML = `
+            <p><strong>Total Farm Area:</strong> ${totalFarmArea.toFixed(2)} ha</p>
+            <p><strong>Encroachment into Protected Areas:</strong> ${areaInProtected.toFixed(2)} ha (${percentProtected}%)</p>
+            <p><strong>Encroachment into Forest:</strong> ${areaInForest.toFixed(2)} ha (${percentForest}%)</p>
+        `;
+        
+        // Draw bar chart
+        const ctx = document.getElementById('encroachChart').getContext('2d');
+        if (encroachChart) encroachChart.destroy();
+        encroachChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Protected Areas', 'Forest'],
+                datasets: [{
+                    label: 'Encroached Area (ha)',
+                    data: [areaInProtected, areaInForest],
+                    backgroundColor: ['#ff6600', '#2e7d32'],
+                    borderColor: ['#cc5500', '#1b5e20'],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                scales: { y: { beginAtZero: true, title: { display: true, text: 'Hectares' } } },
+                plugins: { legend: { position: 'top' }, tooltip: { callbacks: { label: (ctx) => `${ctx.raw.toFixed(2)} ha` } } }
+            }
+        });
+        
+        // Show dialog
+        document.getElementById('encroachmentDialog').style.display = 'block';
+        
+        // Send notification
+        const msg = `⚠️ Farm encroachment: ${areaInProtected.toFixed(2)} ha into protected areas (${percentProtected}%), ${areaInForest.toFixed(2)} ha into forest (${percentForest}%).`;
+        showNotification(msg);
+    }
+    
     // ==================== MAP INIT ====================
     function initMap() {
         map = L.map('map').setView([-18.92, 27.55], 10);
@@ -638,6 +792,12 @@
         document.getElementById('waterLinesBtn').onclick = () => toggleLayer('waterLines');
         document.getElementById('roadsBtn').onclick = () => toggleLayer('roads');
         document.getElementById('damsBtn').onclick = () => toggleLayer('dams');
+
+        // Encroachment button handler
+        document.getElementById('encroachBtn').onclick = () => calculateEncroachment();
+        document.getElementById('closeEncroachDialog').onclick = () => {
+            document.getElementById('encroachmentDialog').style.display = 'none';
+        };
 
         // Legend update (includes LULC when PNG visible)
         function updateLegend() {
@@ -772,7 +932,7 @@
             document.getElementById('notifBadge').innerText = notificationCount;
         }
         document.getElementById('notifyIcon').onclick = () => { notificationCount = 0; document.getElementById('notifBadge').innerText = '0'; };
-        document.getElementById('encroachBtn').onclick = () => alert('Encroachment check placeholder');
+        
         document.getElementById('menuIcon').onclick = () => { const panel = document.getElementById('layerControl'); panel.style.display = panel.style.display === 'none' ? 'block' : 'none'; };
         document.getElementById('graphsIcon').onclick = () => { const panel = document.getElementById('graphsPanel'); panel.style.display = panel.style.display === 'none' ? 'block' : 'none'; if (panel.style.display === 'block') loadAndRenderGraphs(); };
         document.getElementById('closeGraphsBtn').onclick = () => document.getElementById('graphsPanel').style.display = 'none';
