@@ -411,8 +411,7 @@
         currentBaseLayer.addTo(map);
     }
 
-    // ==================== UPDATED LULC PNG BOUNDS ====================
-    // Exact bounds calculated from your world file and image dimensions (2184x1934)
+    // LULC PNG bounds (corrected based on world file)
     const lupaneBounds = [[-19.5664, 27.0994], [-18.1749, 28.6704]];
 
     function loadLulcPng(year, pngUrl) {
@@ -670,6 +669,19 @@
             if (content) { legendDiv.innerHTML = content; legendDiv.style.display = 'block'; }
             else legendDiv.style.display = 'none';
         }
+
+        // ==================== MAP CLICK SHOWS LEGEND POPUP ====================
+        map.on('click', function(e) {
+            if (currentLulcLayer && map.hasLayer(currentLulcLayer)) {
+                const legendContent = document.getElementById('legendPanel').innerHTML;
+                if (legendContent && legendContent.trim() !== '') {
+                    L.popup()
+                        .setLatLng(e.latlng)
+                        .setContent(`<div style="max-width:250px; background:rgba(0,0,0,0.8); color:white; padding:8px; border-radius:6px;">${legendContent}</div>`)
+                        .openOn(map);
+                }
+            }
+        });
 
         // Conflict reporting (unchanged)
         let conflictPoints = [];
