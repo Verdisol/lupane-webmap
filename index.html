@@ -9,9 +9,9 @@
     <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6.5.0/turf.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <!-- Chart.js -->
+    <!-- Chart.js for graphs -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <!-- html2canvas + jsPDF -->
+    <!-- html2canvas + jsPDF for PDF export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
@@ -403,7 +403,7 @@
     let currentSelectedLocation = null;
     let pickingActive = false;
     let currentBaseLayer = null;
-    let currentLulcLayer = null;
+    let currentLulcLayer = null;   // now holds L.imageOverlay for PNG
     let currentFarmLayer = null;
     let currentForestLayer = null;
 
@@ -417,8 +417,8 @@
         currentBaseLayer.addTo(map);
     }
 
-    // LULC: load PNG image overlay (bounds need to match your PNG extent)
-    const lupaneBounds = [[-19.10, 27.30], [-18.70, 27.80]]; // adjust to your PNG
+    // LULC: load PNG image overlay
+    const lupaneBounds = [[-19.10, 27.30], [-18.70, 27.80]]; // adjust to match your PNG extent
     function loadLulcPng(year, pngUrl) {
         if (currentLulcLayer) map.removeLayer(currentLulcLayer);
         currentLulcLayer = L.imageOverlay(pngUrl, lupaneBounds, {
@@ -474,7 +474,7 @@
         }
     }
 
-    // ==================== GRAPHS FROM CSV ====================
+    // Graphs from CSV (same as before)
     let farmlandChart, forestChart, waterChart, pieChart, barChart;
     async function loadAndRenderGraphs() {
         try {
@@ -521,7 +521,7 @@
         } catch(err) { console.warn('CSV error', err); }
     }
 
-    // ==================== PDF EXPORT ====================
+    // PDF export
     async function exportToPDF() {
         const { jsPDF } = window.jspdf;
         const element = document.getElementById('mapContainer');
@@ -567,24 +567,12 @@
             })
             .catch(() => console.warn("Using fallback boundary"));
 
-        // ---------- UPDATED: loadOtherGeoJSON now automatically adds layers to map ----------
+        // Other vector layers
         function loadOtherGeoJSON(name, url, style, popupField='name') {
-            fetch(url)
-                .then(r => r.json())
-                .then(data => {
-                    activeLayers[name] = L.geoJSON(data, {
-                        style: style,
-                        onEachFeature: (f, l) => {
-                            if (f.properties) l.bindPopup(f.properties[popupField] || name);
-                        }
-                    }).addTo(map); // <-- automatically added to map
-                    console.log(`✅ ${name} loaded and added to map`);
-                    updateLegend();
-                })
-                .catch(e => console.warn(`Could not load ${url}`, e));
+            fetch(url).then(r=>r.json()).then(data=>{
+                activeLayers[name] = L.geoJSON(data, { style: style, onEachFeature: (f,l)=>{ if(f.properties) l.bindPopup(f.properties[popupField] || name); } });
+            }).catch(e=>console.warn(`Could not load ${url}`, e));
         }
-
-        // Load all vector layers (they will appear automatically)
         loadOtherGeoJSON('nationalParks', 'NATIONAL PARKS.geojson', { color: '#ff6600', weight: 2, fillOpacity: 0.3 });
         loadOtherGeoJSON('protectedAreas', 'PROTECTED AREAS WITHIN LUPANE.geojson', { color: '#00ced1', weight: 2, fillOpacity: 0.3 });
         loadOtherGeoJSON('rivers', 'RIVERS.geojson', { color: '#1e88e5', weight: 2, fillOpacity: 0 });
@@ -628,7 +616,7 @@
             }
         };
 
-        // Toggle for layers that have buttons (to remove if user wants)
+        // Toggle for other layers
         function toggleLayer(name) {
             if (!activeLayers[name]) { alert(`Layer ${name} not loaded`); return; }
             if (map.hasLayer(activeLayers[name])) map.removeLayer(activeLayers[name]);
@@ -674,7 +662,7 @@
             else legendDiv.style.display = 'none';
         }
 
-        // Conflict reporting (unchanged)
+        // Conflict reporting (same as before)
         let conflictPoints = [];
         function updateHeatmap() {
             if (heatLayer) map.removeLayer(heatLayer);
