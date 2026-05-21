@@ -411,33 +411,56 @@
         currentBaseLayer.addTo(map);
     }
 
-    // LULC PNG overlay (bounds need to match your PNG)
-    const lupaneBounds = [[-19.10, 27.30], [-18.70, 27.80]];
+    // ==================== UPDATED LULC PNG BOUNDS ====================
+    // Exact bounds calculated from your world file and image dimensions (2184x1934)
+    const lupaneBounds = [[-19.5664, 27.0994], [-18.1749, 28.6704]];
+
     function loadLulcPng(year, pngUrl) {
         if (currentLulcLayer) map.removeLayer(currentLulcLayer);
-        currentLulcLayer = L.imageOverlay(pngUrl, lupaneBounds, { opacity: 0.85 }).addTo(map);
+        currentLulcLayer = L.imageOverlay(pngUrl, lupaneBounds, {
+            opacity: 0.85,
+            interactive: true,
+            attribution: `Land Use/Land Cover ${year}`
+        }).addTo(map);
         updateLegend();
     }
 
     // Farm & Forest styles
-    const farmStyle = { color: '#f7e137', weight: 1.5, fillColor: '#fff633', fillOpacity: 0.6 };
-    const forestStyle = { color: '#388036', weight: 1.5, fillColor: '#042d00', fillOpacity: 0.7 };
+    const farmStyle = {
+        color: '#f7e137',
+        weight: 1.5,
+        fillColor: '#fff633',
+        fillOpacity: 0.6,
+        opacity: 0.8
+    };
+    const forestStyle = {
+        color: '#388036',
+        weight: 1.5,
+        fillColor: '#042d00',
+        fillOpacity: 0.7,
+        opacity: 0.9
+    };
 
     function loadGeoJSONLayer(name, url, style, popupField = 'Name') {
-        fetch(url).then(r => r.ok ? r.json() : Promise.reject(`HTTP ${r.status}`))
+        fetch(url)
+            .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
             .then(data => {
                 if (activeLayers[name]) map.removeLayer(activeLayers[name]);
-                const layer = L.geoJSON(data, { style, onEachFeature: (f, l) => {
-                    let props = f.properties;
-                    let content = `<b>${name}</b><br>`;
-                    if (props.Name) content += `Name: ${props.Name}<br>`;
-                    if (props.AREA) content += `Area: ${props.AREA} ha<br>`;
-                    l.bindPopup(content);
-                } });
+                const layer = L.geoJSON(data, {
+                    style: style,
+                    onEachFeature: (f, l) => {
+                        let props = f.properties;
+                        let popupContent = `<b>${name}</b><br>`;
+                        if (props.Name) popupContent += `Name: ${props.Name}<br>`;
+                        if (props.AREA) popupContent += `Area: ${props.AREA} ha<br>`;
+                        l.bindPopup(popupContent);
+                    }
+                });
                 activeLayers[name] = layer;
                 layer.addTo(map);
                 updateLegend();
-            }).catch(err => console.warn(`Could not load ${url}:`, err));
+            })
+            .catch(err => console.warn(`Could not load ${url}:`, err));
     }
 
     function removeLayerIfExists(name) {
@@ -447,17 +470,17 @@
         }
     }
 
-    // ==================== GRAPHS ====================
+    // ==================== GRAPHS FROM CSV ====================
     let farmlandChart, forestChart, waterChart, pieChart, barChart;
     async function loadAndRenderGraphs() {
         try {
-            const res = await fetch('lulc_stats.csv');
-            const txt = await res.text();
-            const rows = txt.trim().split('\n');
+            const response = await fetch('lulc_stats.csv');
+            const csvText = await response.text();
+            const rows = csvText.trim().split('\n');
             const years = [], farmland = [], forest = [], water = [], grassland = [], urban = [];
-            for (let i=1; i<rows.length; i++) {
+            for (let i = 1; i < rows.length; i++) {
                 const cols = rows[i].split(',');
-                if (cols.length<6) continue;
+                if (cols.length < 6) continue;
                 years.push(parseInt(cols[0]));
                 farmland.push(parseFloat(cols[1]));
                 forest.push(parseFloat(cols[2]));
@@ -498,7 +521,7 @@
     async function exportToPDF() {
         const { jsPDF } = window.jspdf;
         const element = document.getElementById('mapContainer');
-        const oldOverflow = element.style.overflow;
+        const originalOverflow = element.style.overflow;
         element.style.overflow = 'visible';
         try {
             const canvas = await html2canvas(element, { scale: 2, useCORS: true });
@@ -507,7 +530,7 @@
             const imgWidth = 297, imgHeight = (canvas.height * imgWidth) / canvas.width;
             pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
             pdf.save('lupane_map_report.pdf');
-        } catch(err) { alert('PDF export failed'); } finally { element.style.overflow = oldOverflow; }
+        } catch(err) { alert('PDF export failed'); } finally { element.style.overflow = originalOverflow; }
     }
 
     // ==================== MAP INIT ====================
@@ -520,24 +543,25 @@
         document.querySelector('input[value="satellite"]').addEventListener('change', () => switchBaseLayer('satellite'));
 
         // Fallback boundary
-        const fallback = L.polygon([
+        const fallbackBoundary = L.polygon([
             [27.40,-18.80],[27.65,-18.80],[27.70,-18.90],
             [27.65,-19.05],[27.40,-19.05],[27.35,-18.95],[27.40,-18.80]
         ], { color: '#e63946', weight: 4, fillOpacity: 0, dashArray: '8,8' }).addTo(map);
-        fallback.bindPopup("Lupane District (fallback)");
-        activeLayers.lupaneDistrict = fallback;
+        fallbackBoundary.bindPopup("Lupane District (fallback)");
+        activeLayers.lupaneDistrict = fallbackBoundary;
         activeLayers.lupaneDistrictFallback = true;
 
         fetch('LUPANE BOUNDARY DISTRICT.geojson')
             .then(r => r.json())
             .then(data => {
-                map.removeLayer(fallback);
-                const real = L.geoJSON(data, { style: { color: '#060509', weight: 3, fillOpacity: 0 }, onEachFeature: (f,l) => l.bindPopup(f.properties.DISTRICT || 'Lupane') });
-                activeLayers.lupaneDistrict = real;
+                map.removeLayer(fallbackBoundary);
+                const realBoundary = L.geoJSON(data, { style: { color: '#060509', weight: 3, fillOpacity: 0 }, onEachFeature: (f,l) => l.bindPopup(f.properties.DISTRICT || 'Lupane') });
+                activeLayers.lupaneDistrict = realBoundary;
                 delete activeLayers.lupaneDistrictFallback;
-                real.addTo(map);
+                realBoundary.addTo(map);
                 updateLegend();
-            }).catch(() => console.warn("Using fallback boundary"));
+            })
+            .catch(() => console.warn("Using fallback boundary"));
 
         // Universal loader for vector layers (adds to map automatically)
         function loadOtherGeoJSON(name, url, style, popupField='name') {
@@ -545,22 +569,24 @@
                 .then(r => r.ok ? r.json() : Promise.reject(`HTTP ${r.status}`))
                 .then(data => {
                     if (activeLayers[name]) map.removeLayer(activeLayers[name]);
-                    activeLayers[name] = L.geoJSON(data, { style, onEachFeature: (f,l) => {
-                        if (f.properties) l.bindPopup(f.properties[popupField] || name);
-                    } }).addTo(map);
+                    activeLayers[name] = L.geoJSON(data, {
+                        style: style,
+                        onEachFeature: (f, l) => {
+                            if (f.properties) l.bindPopup(f.properties[popupField] || name);
+                        }
+                    }).addTo(map);
                     console.log(`✅ ${name} loaded from ${url}`);
                     updateLegend();
                 })
                 .catch(err => console.error(`❌ Could not load ${name} from ${url}:`, err));
         }
 
-        // Load all vector layers (including DAMS with correct file name)
+        // Load all vector layers
         loadOtherGeoJSON('nationalParks', 'NATIONAL PARKS.geojson', { color: '#ff6600', weight: 2, fillOpacity: 0.3 });
         loadOtherGeoJSON('protectedAreas', 'PROTECTED AREAS WITHIN LUPANE.geojson', { color: '#00ced1', weight: 2, fillOpacity: 0.3 });
         loadOtherGeoJSON('rivers', 'RIVERS.geojson', { color: '#1e88e5', weight: 2, fillOpacity: 0 });
         loadOtherGeoJSON('waterLines', 'WATER LINES.geojson', { color: '#42a5f5', weight: 2, fillOpacity: 0 });
         loadOtherGeoJSON('roads', 'ROADS.geojson', { color: '#DB1E2A', weight: 2, dashArray: '4,12', lineCap: 'round' });
-        // FIXED: file name now matches your "DAM.geojson"
         loadOtherGeoJSON('dams', 'DAM.geojson', { color: '#232323', weight: 1, fillColor: '#0000FF', fillOpacity: 0.8 }, 'DAM_NAME');
 
         // LULC PNG dropdown
@@ -570,7 +596,11 @@
             else if (val === '2015') loadLulcPng('2015', 'LAND USE LAND COVER 2015.png');
             else if (val === '2020') loadLulcPng('2020', 'LAND USE LAND COVER 2020.png');
             else if (val === '2026') loadLulcPng('2026', 'LAND USE LAND COVER 2026.png');
-            else { if (currentLulcLayer) map.removeLayer(currentLulcLayer); currentLulcLayer = null; updateLegend(); }
+            else {
+                if (currentLulcLayer) map.removeLayer(currentLulcLayer);
+                currentLulcLayer = null;
+                updateLegend();
+            }
         };
 
         // Farm boundaries dropdown
@@ -578,7 +608,10 @@
         farmDropdown.onchange = () => {
             const year = farmDropdown.value;
             removeLayerIfExists('farmLayer');
-            if (year) loadGeoJSONLayer('farmLayer', `FARMS_${year}.geojson`, farmStyle, 'Name');
+            if (year) {
+                const fileName = `FARMS_${year}.geojson`;
+                loadGeoJSONLayer('farmLayer', fileName, farmStyle, 'Name');
+            }
         };
 
         // Forest layers dropdown
@@ -586,10 +619,13 @@
         forestDropdown.onchange = () => {
             const year = forestDropdown.value;
             removeLayerIfExists('forestLayer');
-            if (year) loadGeoJSONLayer('forestLayer', `FOREST_${year}.geojson`, forestStyle, 'Name');
+            if (year) {
+                const fileName = `FOREST_${year}.geojson`;
+                loadGeoJSONLayer('forestLayer', fileName, forestStyle, 'Name');
+            }
         };
 
-        // Toggle buttons for layers
+        // Toggle for layers that have buttons
         function toggleLayer(name) {
             if (!activeLayers[name]) { alert(`Layer ${name} not loaded`); return; }
             if (map.hasLayer(activeLayers[name])) map.removeLayer(activeLayers[name]);
@@ -604,11 +640,12 @@
         document.getElementById('roadsBtn').onclick = () => toggleLayer('roads');
         document.getElementById('damsBtn').onclick = () => toggleLayer('dams');
 
+        // Legend update (includes LULC when PNG visible)
         function updateLegend() {
             const legendDiv = document.getElementById('legendPanel');
             let content = '';
             if (currentLulcLayer && map.hasLayer(currentLulcLayer)) {
-                content += `<strong>LAND COVER (PNG)</strong><br>
+                content += `<strong>LAND COVER (PNG overlay)</strong><br>
                     <p><span style="background:#2311e7;"></span> Water</p>
                     <p><span style="background:#3ea017;"></span> Crop Fields</p>
                     <p><span style="background:#031305;"></span> Built up Area</p>
@@ -617,24 +654,19 @@
                     <p><span style="background:#04410a;"></span> Forest</p>
                     <p><span style="background:#c4af10;"></span> Roads</p><hr>`;
             }
-            if (activeLayers.farmLayer && map.hasLayer(activeLayers.farmLayer))
-                content += `<strong>FARM BOUNDARIES (${farmDropdown.value})</strong><br><p><span style="background:#fff633;"></span> Yellow fields</p><hr>`;
-            if (activeLayers.forestLayer && map.hasLayer(activeLayers.forestLayer))
-                content += `<strong>FOREST (${forestDropdown.value})</strong><br><p><span style="background:#042d00;"></span> Dark green forest</p><hr>`;
-            if (activeLayers.lupaneDistrict && map.hasLayer(activeLayers.lupaneDistrict))
-                content += `<strong>LUPANE BOUNDARY</strong><br><p><span style="background:#060509;"></span> Boundary</p><hr>`;
-            if (activeLayers.nationalParks && map.hasLayer(activeLayers.nationalParks))
-                content += `<strong>NATIONAL PARKS</strong><br><p><span style="background:#ff6600;"></span> Park area</p><hr>`;
-            if (activeLayers.protectedAreas && map.hasLayer(activeLayers.protectedAreas))
-                content += `<strong>PROTECTED AREAS</strong><br><p><span style="background:#00ced1;"></span> Protected zone</p><hr>`;
-            if (activeLayers.rivers && map.hasLayer(activeLayers.rivers))
-                content += `<strong>RIVERS</strong><br><p><span style="background:#1e88e5;"></span> River lines</p><hr>`;
-            if (activeLayers.waterLines && map.hasLayer(activeLayers.waterLines))
-                content += `<strong>WATER LINES</strong><br><p><span style="background:#42a5f5;"></span> Watercourses</p><hr>`;
-            if (activeLayers.roads && map.hasLayer(activeLayers.roads))
-                content += `<strong>ROADS</strong><br><p><span style="background:#DB1E2A;"></span> Roads (dashed)</p><hr>`;
-            if (activeLayers.dams && map.hasLayer(activeLayers.dams))
-                content += `<strong>DAMS</strong><br><p><span style="background:#0000FF;"></span> Dam / Reservoir</p><hr>`;
+            if (activeLayers.farmLayer && map.hasLayer(activeLayers.farmLayer)) {
+                content += `<strong>FARM BOUNDARIES (${farmDropdown.value})</strong><br><p><span style="background:#fff633;"></span> Yellow (farm fields)</p><hr>`;
+            }
+            if (activeLayers.forestLayer && map.hasLayer(activeLayers.forestLayer)) {
+                content += `<strong>FOREST LAYER (${forestDropdown.value})</strong><br><p><span style="background:#042d00;"></span> Dark green forest</p><hr>`;
+            }
+            if (activeLayers.lupaneDistrict && map.hasLayer(activeLayers.lupaneDistrict)) content += `<strong>LUPANE BOUNDARY</strong><br><p><span style="background:#060509;"></span> Boundary</p><hr>`;
+            if (activeLayers.nationalParks && map.hasLayer(activeLayers.nationalParks)) content += `<strong>NATIONAL PARKS</strong><br><p><span style="background:#ff6600;"></span> Park area</p><hr>`;
+            if (activeLayers.protectedAreas && map.hasLayer(activeLayers.protectedAreas)) content += `<strong>PROTECTED AREAS</strong><br><p><span style="background:#00ced1;"></span> Protected zone</p><hr>`;
+            if (activeLayers.rivers && map.hasLayer(activeLayers.rivers)) content += `<strong>RIVERS</strong><br><p><span style="background:#1e88e5;"></span> River lines</p><hr>`;
+            if (activeLayers.waterLines && map.hasLayer(activeLayers.waterLines)) content += `<strong>WATER LINES</strong><br><p><span style="background:#42a5f5;"></span> Watercourses</p><hr>`;
+            if (activeLayers.roads && map.hasLayer(activeLayers.roads)) content += `<strong>ROADS</strong><br><p><span style="background:#DB1E2A;"></span> Roads (dashed)</p><hr>`;
+            if (activeLayers.dams && map.hasLayer(activeLayers.dams)) content += `<strong>DAMS</strong><br><p><span style="background:#0000FF;"></span> Dam / Reservoir</p><hr>`;
             if (content) { legendDiv.innerHTML = content; legendDiv.style.display = 'block'; }
             else legendDiv.style.display = 'none';
         }
@@ -657,17 +689,17 @@
         // Draggable report panel
         const reportPanel = document.getElementById('reportPanel');
         const dragHandle = reportPanel.querySelector('.panel-header');
-        let offX, offY, startX, startY;
+        let offsetX, offsetY, startX, startY;
         dragHandle.addEventListener('mousedown', (e) => {
             e.preventDefault();
             startX = e.clientX; startY = e.clientY;
-            offX = reportPanel.offsetLeft; offY = reportPanel.offsetTop;
-            document.addEventListener('mousemove', onMove);
-            document.addEventListener('mouseup', onUp);
+            offsetX = reportPanel.offsetLeft; offsetY = reportPanel.offsetTop;
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
         });
-        function onMove(e) {
-            let left = offX + (e.clientX - startX);
-            let top = offY + (e.clientY - startY);
+        function onMouseMove(e) {
+            let left = offsetX + (e.clientX - startX);
+            let top = offsetY + (e.clientY - startY);
             left = Math.min(window.innerWidth - reportPanel.offsetWidth - 10, Math.max(10, left));
             top = Math.min(window.innerHeight - reportPanel.offsetHeight - 10, Math.max(10, top));
             reportPanel.style.left = left + 'px';
@@ -675,7 +707,7 @@
             reportPanel.style.top = top + 'px';
             reportPanel.style.bottom = 'auto';
         }
-        function onUp() { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); }
+        function onMouseUp() { document.removeEventListener('mousemove', onMouseMove); document.removeEventListener('mouseup', onMouseUp); }
 
         const reportIcon = document.getElementById('reportIcon');
         const closeReport = document.getElementById('closeReportBtn');
@@ -720,7 +752,6 @@
             if (!reportPanel.style.left) { reportPanel.style.right = '20px'; reportPanel.style.bottom = '80px'; reportPanel.style.left = 'auto'; reportPanel.style.top = 'auto'; }
         };
         closeReport.onclick = () => reportPanel.style.display = 'none';
-
         function showNotification(msg) {
             if (Notification.permission === 'granted') new Notification('Lupane Monitor', { body: msg });
             else if (Notification.permission !== 'denied') Notification.requestPermission().then(perm => { if (perm === 'granted') new Notification('Lupane Monitor', { body: msg }); });
