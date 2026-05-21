@@ -13,9 +13,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
+        /* (all styles unchanged from previous working version) */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', sans-serif; overflow: hidden; }
-        
         .login-modal {
             position: fixed;
             top: 0;
@@ -262,7 +262,6 @@
             font-size: 10px;
             font-weight: bold;
         }
-        /* Encroachment results dialog */
         .encroachment-dialog {
             position: absolute;
             top: 100px;
@@ -401,7 +400,6 @@
         <div class="graph-container"><canvas id="barComparisonChart" width="400" height="200"></canvas></div>
         <p style="font-size:10px; text-align:center;">Data source: lulc_stats.csv</p>
     </div>
-    <!-- Encroachment results dialog -->
     <div id="encroachmentDialog" class="encroachment-dialog">
         <button id="closeEncroachDialog">✖</button>
         <h4>🌾 Farm Encroachment Report</h4>
@@ -413,7 +411,7 @@
 <script>
     // ==================== LOGIN ====================
     const loginModal = document.getElementById('loginModal');
-    const mapContainer = getElementById('mapContainer');
+    const mapContainer = document.getElementById('mapContainer');
     const loginBtn = document.getElementById('loginBtn');
     const loginError = document.getElementById('loginError');
     const correctUser = 'web gis', correctPass = '@2026';
@@ -437,7 +435,7 @@
     let pickingActive = false;
     let currentBaseLayer = null;
     let currentLulcLayer = null;
-    let encroachChart = null; // Chart instance for encroachment
+    let encroachChart = null;
 
     // Basemaps
     const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' });
@@ -449,7 +447,7 @@
         currentBaseLayer.addTo(map);
     }
 
-    // LULC PNG bounds
+    // LULC PNG bounds (corrected)
     const lupaneBounds = [[-19.5664, 27.0994], [-18.1749, 28.6704]];
 
     function loadLulcPng(year, pngUrl) {
@@ -462,7 +460,7 @@
         updateLegend();
     }
 
-    // Farm & Forest styles
+    // Farm & Forest styles (visual only)
     const farmStyle = {
         color: '#f7e137',
         weight: 1.5,
@@ -478,6 +476,7 @@
         opacity: 0.9
     };
 
+    // Load a GeoJSON layer and store in activeLayers
     function loadGeoJSONLayer(name, url, style, popupField = 'Name') {
         fetch(url)
             .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
@@ -507,7 +506,190 @@
         }
     }
 
-    // ==================== GRAPHS FROM CSV ====================
+    // ==================== ENCROACHMENT (INTEGRATED WITH CURRENT LAYERS) ====================
+    async function calculateEncroachment() {
+        const farmYear = document.getElementById('farmDropdown').value;
+        const forestYear = document.getElementById('forestDropdown').value;
+        
+        if (!farmYear) {
+            alert('Please select a farm year from the dropdown first.');
+            return;
+        }
+        
+        // Get the already loaded farm layer (or load it if not yet loaded)
+        let farmLayer = activeLayers.farmLayer;
+        if (!farmLayer) {
+            alert('Farm layer not loaded. Please select a farm year to load it first.');
+            return;
+        }
+        
+        // Get the already loaded protected areas layer
+        let protectedLayer = activeLayers.protectedAreas;
+        if (!protectedLayer) {
+            alert('Protected areas layer not loaded. Please ensure the file "PROTECTED AREAS WITHIN LUPANE.geojson" exists.');
+            return;
+        }
+        
+        // Get the forest layer (if selected)
+        let forestLayer = null;
+        if (forestYear) {
+            forestLayer = activeLayers.forestLayer;
+            if (!forestLayer) {
+                alert(`Forest layer for ${forestYear} not loaded. Please select the forest year from the dropdown first.`);
+                return;
+            }
+        }
+        
+        // Extract GeoJSON data from Leaflet layers
+        function getGeoJSONFromLayer(layer) {
+            if (!layer) return null;
+            // If it's a Leaflet GeoJSON layer, we can get its feature group
+            // We need to collect all features. Simpler: we store the original GeoJSON data when loaded.
+            // To avoid re-fetching, we'll store the data in a separate object.
+            // For simplicity, we'll re-fetch the file. But since the user insists on integration,
+            // we'll use the original data stored in a custom property.
+            // Let's store the raw GeoJSON data when loading.
+            if (layer._geojsonData) return layer._geojsonData;
+            return null;
+        }
+        
+        // Instead of re-fetching, we'll fetch again (but that's what we had). To truly integrate,
+        // we need to store the raw GeoJSON when loading. I'll modify the loadGeoJSONLayer to store the data.
+        // But to avoid rewriting everything, I'll fetch again but with proper error handling.
+        // However, the user wants integration with the already loaded layers – so I'll implement a storage solution.
+        // Let's add a property `_geojsonData` to the layer when loaded.
+        // I'll redefine loadGeoJSONLayer to store the data.
+        // But for brevity, I'll keep fetching, but ensure the files are accessible.
+        // Given the user's complaint, I'll refactor to store the data.
+    }
+    
+    // We need to modify the loadGeoJSONLayer function to store the raw GeoJSON.
+    // I'll overwrite it now.
+    function loadGeoJSONLayerWithData(name, url, style, popupField = 'Name') {
+        fetch(url)
+            .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+            .then(data => {
+                if (activeLayers[name]) map.removeLayer(activeLayers[name]);
+                const layer = L.geoJSON(data, {
+                    style: style,
+                    onEachFeature: (f, l) => {
+                        let props = f.properties;
+                        let popupContent = `<b>${name}</b><br>`;
+                        if (props.Name) popupContent += `Name: ${props.Name}<br>`;
+                        if (props.AREA) popupContent += `Area: ${props.AREA} ha<br>`;
+                        l.bindPopup(popupContent);
+                    }
+                });
+                layer._geojsonData = data; // store raw data for encroachment
+                activeLayers[name] = layer;
+                layer.addTo(map);
+                updateLegend();
+            })
+            .catch(err => console.warn(`Could not load ${url}:`, err));
+    }
+    
+    // Replace the existing loadGeoJSONLayer with the version that stores data.
+    // But we need to keep the original name for the rest of the code? We'll just override.
+    window.loadGeoJSONLayer = loadGeoJSONLayerWithData;
+    
+    // Now the encroachment function will use the stored data.
+    async function calculateEncroachmentIntegrated() {
+        const farmYear = document.getElementById('farmDropdown').value;
+        const forestYear = document.getElementById('forestDropdown').value;
+        
+        if (!farmYear) {
+            alert('Please select a farm year from the dropdown first.');
+            return;
+        }
+        
+        let farmLayer = activeLayers.farmLayer;
+        if (!farmLayer || !farmLayer._geojsonData) {
+            alert('Farm data not available. Please select a farm year to load it.');
+            return;
+        }
+        
+        let protectedLayer = activeLayers.protectedAreas;
+        if (!protectedLayer || !protectedLayer._geojsonData) {
+            alert('Protected areas data not available. Make sure the layer is loaded.');
+            return;
+        }
+        
+        let forestLayer = null;
+        if (forestYear) {
+            forestLayer = activeLayers.forestLayer;
+            if (!forestLayer || !forestLayer._geojsonData) {
+                alert(`Forest data for ${forestYear} not available. Please select the forest year.`);
+                return;
+            }
+        }
+        
+        const farmData = farmLayer._geojsonData;
+        const protectedData = protectedLayer._geojsonData;
+        const forestData = forestLayer ? forestLayer._geojsonData : null;
+        
+        let totalFarmArea = 0;
+        let areaInProtected = 0;
+        let areaInForest = 0;
+        
+        turf.featureEach(farmData, (farmFeature) => {
+            const farmArea = turf.area(farmFeature) / 10000;
+            totalFarmArea += farmArea;
+            
+            turf.featureEach(protectedData, (protFeature) => {
+                if (turf.booleanIntersects(farmFeature, protFeature)) {
+                    const intersection = turf.intersect(farmFeature, protFeature);
+                    if (intersection) areaInProtected += turf.area(intersection) / 10000;
+                }
+            });
+            
+            if (forestData) {
+                turf.featureEach(forestData, (forestFeature) => {
+                    if (turf.booleanIntersects(farmFeature, forestFeature)) {
+                        const intersection = turf.intersect(farmFeature, forestFeature);
+                        if (intersection) areaInForest += turf.area(intersection) / 10000;
+                    }
+                });
+            }
+        });
+        
+        const percentProtected = totalFarmArea > 0 ? (areaInProtected / totalFarmArea * 100).toFixed(2) : 0;
+        const percentForest = totalFarmArea > 0 ? (areaInForest / totalFarmArea * 100).toFixed(2) : 0;
+        
+        const statsDiv = document.getElementById('encroachmentStats');
+        statsDiv.innerHTML = `
+            <p><strong>Total Farm Area:</strong> ${totalFarmArea.toFixed(2)} ha</p>
+            <p><strong>Encroachment into Protected Areas:</strong> ${areaInProtected.toFixed(2)} ha (${percentProtected}%)</p>
+            <p><strong>Encroachment into Forest:</strong> ${areaInForest.toFixed(2)} ha (${percentForest}%)</p>
+        `;
+        
+        const ctx = document.getElementById('encroachChart').getContext('2d');
+        if (encroachChart) encroachChart.destroy();
+        encroachChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Protected Areas', 'Forest'],
+                datasets: [{
+                    label: 'Encroached Area (ha)',
+                    data: [areaInProtected, areaInForest],
+                    backgroundColor: ['#ff6600', '#2e7d32'],
+                    borderColor: ['#cc5500', '#1b5e20'],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                scales: { y: { beginAtZero: true, title: { display: true, text: 'Hectares' } } },
+                plugins: { legend: { position: 'top' }, tooltip: { callbacks: { label: (ctx) => `${ctx.raw.toFixed(2)} ha` } } }
+            }
+        });
+        
+        document.getElementById('encroachmentDialog').style.display = 'block';
+        const msg = `⚠️ Farm encroachment: ${areaInProtected.toFixed(2)} ha into protected areas (${percentProtected}%), ${areaInForest.toFixed(2)} ha into forest (${percentForest}%).`;
+        showNotification(msg);
+    }
+    
+    // ==================== GRAPHS ====================
     let farmlandChart, forestChart, waterChart, pieChart, barChart;
     async function loadAndRenderGraphs() {
         try {
@@ -570,122 +752,6 @@
         } catch(err) { alert('PDF export failed'); } finally { element.style.overflow = originalOverflow; }
     }
 
-    // ==================== ENCROACHMENT CALCULATION ====================
-    async function calculateEncroachment() {
-        const farmYear = document.getElementById('farmDropdown').value;
-        const forestYear = document.getElementById('forestDropdown').value;
-        
-        if (!farmYear) {
-            alert('Please select a farm year from the dropdown first.');
-            return;
-        }
-        
-        // Fetch farm GeoJSON
-        const farmUrl = `FARMS_${farmYear}.geojson`;
-        let farmData;
-        try {
-            const resp = await fetch(farmUrl);
-            if (!resp.ok) throw new Error(`Farm file ${farmUrl} not found`);
-            farmData = await resp.json();
-        } catch (err) {
-            alert(`Could not load farm boundaries: ${err.message}`);
-            return;
-        }
-        
-        // Fetch protected areas
-        let protectedData;
-        try {
-            const resp = await fetch('PROTECTED AREAS WITHIN LUPANE.geojson');
-            if (!resp.ok) throw new Error('Protected areas file not found');
-            protectedData = await resp.json();
-        } catch (err) {
-            alert(`Could not load protected areas: ${err.message}`);
-            return;
-        }
-        
-        // Fetch forest if a year is selected
-        let forestData = null;
-        if (forestYear) {
-            const forestUrl = `FOREST_${forestYear}.geojson`;
-            try {
-                const resp = await fetch(forestUrl);
-                if (resp.ok) forestData = await resp.json();
-                else console.warn(`Forest file ${forestUrl} not found, skipping forest encroachment`);
-            } catch (err) { console.warn('Forest layer not loaded', err); }
-        }
-        
-        // Compute total farm area and overlaps using Turf.js
-        let totalFarmArea = 0;
-        let areaInProtected = 0;
-        let areaInForest = 0;
-        
-        // Iterate over farm features
-        turf.featureEach(farmData, (farmFeature) => {
-            const farmArea = turf.area(farmFeature) / 10000; // hectares
-            totalFarmArea += farmArea;
-            
-            // Check intersection with protected areas
-            turf.featureEach(protectedData, (protFeature) => {
-                if (turf.booleanIntersects(farmFeature, protFeature)) {
-                    const intersection = turf.intersect(farmFeature, protFeature);
-                    if (intersection) areaInProtected += turf.area(intersection) / 10000;
-                }
-            });
-            
-            // Check intersection with forest if available
-            if (forestData) {
-                turf.featureEach(forestData, (forestFeature) => {
-                    if (turf.booleanIntersects(farmFeature, forestFeature)) {
-                        const intersection = turf.intersect(farmFeature, forestFeature);
-                        if (intersection) areaInForest += turf.area(intersection) / 10000;
-                    }
-                });
-            }
-        });
-        
-        // Avoid double counting if farm overlaps both protected and forest? We'll show both separately.
-        const percentProtected = totalFarmArea > 0 ? (areaInProtected / totalFarmArea * 100).toFixed(2) : 0;
-        const percentForest = totalFarmArea > 0 ? (areaInForest / totalFarmArea * 100).toFixed(2) : 0;
-        
-        // Prepare stats HTML
-        const statsDiv = document.getElementById('encroachmentStats');
-        statsDiv.innerHTML = `
-            <p><strong>Total Farm Area:</strong> ${totalFarmArea.toFixed(2)} ha</p>
-            <p><strong>Encroachment into Protected Areas:</strong> ${areaInProtected.toFixed(2)} ha (${percentProtected}%)</p>
-            <p><strong>Encroachment into Forest:</strong> ${areaInForest.toFixed(2)} ha (${percentForest}%)</p>
-        `;
-        
-        // Draw bar chart
-        const ctx = document.getElementById('encroachChart').getContext('2d');
-        if (encroachChart) encroachChart.destroy();
-        encroachChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: ['Protected Areas', 'Forest'],
-                datasets: [{
-                    label: 'Encroached Area (ha)',
-                    data: [areaInProtected, areaInForest],
-                    backgroundColor: ['#ff6600', '#2e7d32'],
-                    borderColor: ['#cc5500', '#1b5e20'],
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                scales: { y: { beginAtZero: true, title: { display: true, text: 'Hectares' } } },
-                plugins: { legend: { position: 'top' }, tooltip: { callbacks: { label: (ctx) => `${ctx.raw.toFixed(2)} ha` } } }
-            }
-        });
-        
-        // Show dialog
-        document.getElementById('encroachmentDialog').style.display = 'block';
-        
-        // Send notification
-        const msg = `⚠️ Farm encroachment: ${areaInProtected.toFixed(2)} ha into protected areas (${percentProtected}%), ${areaInForest.toFixed(2)} ha into forest (${percentForest}%).`;
-        showNotification(msg);
-    }
-    
     // ==================== MAP INIT ====================
     function initMap() {
         map = L.map('map').setView([-18.92, 27.55], 10);
@@ -716,25 +782,27 @@
             })
             .catch(() => console.warn("Using fallback boundary"));
 
-        // Universal loader for vector layers (adds to map automatically)
+        // Load vector layers with data storage
         function loadOtherGeoJSON(name, url, style, popupField='name') {
             fetch(url)
                 .then(r => r.ok ? r.json() : Promise.reject(`HTTP ${r.status}`))
                 .then(data => {
                     if (activeLayers[name]) map.removeLayer(activeLayers[name]);
-                    activeLayers[name] = L.geoJSON(data, {
+                    const layer = L.geoJSON(data, {
                         style: style,
                         onEachFeature: (f, l) => {
                             if (f.properties) l.bindPopup(f.properties[popupField] || name);
                         }
-                    }).addTo(map);
+                    });
+                    layer._geojsonData = data;
+                    activeLayers[name] = layer;
+                    layer.addTo(map);
                     console.log(`✅ ${name} loaded from ${url}`);
                     updateLegend();
                 })
                 .catch(err => console.error(`❌ Could not load ${name} from ${url}:`, err));
         }
 
-        // Load all vector layers
         loadOtherGeoJSON('nationalParks', 'NATIONAL PARKS.geojson', { color: '#ff6600', weight: 2, fillOpacity: 0.3 });
         loadOtherGeoJSON('protectedAreas', 'PROTECTED AREAS WITHIN LUPANE.geojson', { color: '#00ced1', weight: 2, fillOpacity: 0.3 });
         loadOtherGeoJSON('rivers', 'RIVERS.geojson', { color: '#1e88e5', weight: 2, fillOpacity: 0 });
@@ -749,36 +817,70 @@
             else if (val === '2015') loadLulcPng('2015', 'LAND USE LAND COVER 2015.png');
             else if (val === '2020') loadLulcPng('2020', 'LAND USE LAND COVER 2020.png');
             else if (val === '2026') loadLulcPng('2026', 'LAND USE LAND COVER 2026.png');
-            else {
-                if (currentLulcLayer) map.removeLayer(currentLulcLayer);
-                currentLulcLayer = null;
-                updateLegend();
-            }
+            else { if (currentLulcLayer) map.removeLayer(currentLulcLayer); currentLulcLayer = null; updateLegend(); }
         };
 
-        // Farm boundaries dropdown
+        // Farm boundaries dropdown (using the enhanced loader)
         const farmDropdown = document.getElementById('farmDropdown');
         farmDropdown.onchange = () => {
             const year = farmDropdown.value;
             removeLayerIfExists('farmLayer');
             if (year) {
                 const fileName = `FARMS_${year}.geojson`;
-                loadGeoJSONLayer('farmLayer', fileName, farmStyle, 'Name');
+                fetch(fileName)
+                    .then(r => r.ok ? r.json() : Promise.reject(`HTTP ${r.status}`))
+                    .then(data => {
+                        if (activeLayers.farmLayer) map.removeLayer(activeLayers.farmLayer);
+                        const layer = L.geoJSON(data, {
+                            style: farmStyle,
+                            onEachFeature: (f, l) => {
+                                let props = f.properties;
+                                let content = `<b>Farm Boundaries ${year}</b><br>`;
+                                if (props.Name) content += `Name: ${props.Name}<br>`;
+                                if (props.AREA) content += `Area: ${props.AREA} ha<br>`;
+                                l.bindPopup(content);
+                            }
+                        });
+                        layer._geojsonData = data;
+                        activeLayers.farmLayer = layer;
+                        layer.addTo(map);
+                        updateLegend();
+                    })
+                    .catch(err => console.warn(`Could not load ${fileName}:`, err));
             }
         };
 
-        // Forest layers dropdown
+        // Forest layers dropdown (enhanced)
         const forestDropdown = document.getElementById('forestDropdown');
         forestDropdown.onchange = () => {
             const year = forestDropdown.value;
             removeLayerIfExists('forestLayer');
             if (year) {
                 const fileName = `FOREST_${year}.geojson`;
-                loadGeoJSONLayer('forestLayer', fileName, forestStyle, 'Name');
+                fetch(fileName)
+                    .then(r => r.ok ? r.json() : Promise.reject(`HTTP ${r.status}`))
+                    .then(data => {
+                        if (activeLayers.forestLayer) map.removeLayer(activeLayers.forestLayer);
+                        const layer = L.geoJSON(data, {
+                            style: forestStyle,
+                            onEachFeature: (f, l) => {
+                                let props = f.properties;
+                                let content = `<b>Forest ${year}</b><br>`;
+                                if (props.Name) content += `Name: ${props.Name}<br>`;
+                                if (props.AREA) content += `Area: ${props.AREA} ha<br>`;
+                                l.bindPopup(content);
+                            }
+                        });
+                        layer._geojsonData = data;
+                        activeLayers.forestLayer = layer;
+                        layer.addTo(map);
+                        updateLegend();
+                    })
+                    .catch(err => console.warn(`Could not load ${fileName}:`, err));
             }
         };
 
-        // Toggle for layers that have buttons
+        // Toggle for other layers
         function toggleLayer(name) {
             if (!activeLayers[name]) { alert(`Layer ${name} not loaded`); return; }
             if (map.hasLayer(activeLayers[name])) map.removeLayer(activeLayers[name]);
@@ -793,13 +895,13 @@
         document.getElementById('roadsBtn').onclick = () => toggleLayer('roads');
         document.getElementById('damsBtn').onclick = () => toggleLayer('dams');
 
-        // Encroachment button handler
-        document.getElementById('encroachBtn').onclick = () => calculateEncroachment();
+        // Encroachment button (integrated)
+        document.getElementById('encroachBtn').onclick = calculateEncroachmentIntegrated;
         document.getElementById('closeEncroachDialog').onclick = () => {
             document.getElementById('encroachmentDialog').style.display = 'none';
         };
 
-        // Legend update (includes LULC when PNG visible)
+        // Legend update
         function updateLegend() {
             const legendDiv = document.getElementById('legendPanel');
             let content = '';
@@ -830,7 +932,7 @@
             else legendDiv.style.display = 'none';
         }
 
-        // ==================== MAP CLICK SHOWS LEGEND POPUP ====================
+        // Map click legend popup
         map.on('click', function(e) {
             if (currentLulcLayer && map.hasLayer(currentLulcLayer)) {
                 const legendContent = document.getElementById('legendPanel').innerHTML;
@@ -932,7 +1034,6 @@
             document.getElementById('notifBadge').innerText = notificationCount;
         }
         document.getElementById('notifyIcon').onclick = () => { notificationCount = 0; document.getElementById('notifBadge').innerText = '0'; };
-        
         document.getElementById('menuIcon').onclick = () => { const panel = document.getElementById('layerControl'); panel.style.display = panel.style.display === 'none' ? 'block' : 'none'; };
         document.getElementById('graphsIcon').onclick = () => { const panel = document.getElementById('graphsPanel'); panel.style.display = panel.style.display === 'none' ? 'block' : 'none'; if (panel.style.display === 'block') loadAndRenderGraphs(); };
         document.getElementById('closeGraphsBtn').onclick = () => document.getElementById('graphsPanel').style.display = 'none';
