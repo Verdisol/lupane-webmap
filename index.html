@@ -9,7 +9,9 @@
     <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6.5.0/turf.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Chart.js for graphs -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- html2canvas + jsPDF for PDF export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
@@ -401,7 +403,7 @@
     let currentSelectedLocation = null;
     let pickingActive = false;
     let currentBaseLayer = null;
-    let currentLulcLayer = null;
+    let currentLulcLayer = null;   // now holds L.imageOverlay for PNG
     let currentFarmLayer = null;
     let currentForestLayer = null;
 
@@ -415,45 +417,30 @@
         currentBaseLayer.addTo(map);
     }
 
-    // LULC render (QGIS style as before)
-    function renderLULC(data, ctx, canvasWidth, canvasHeight) {
-        const w = data[0].length, h = data.length;
-        const imgData = ctx.getImageData(0, 0, canvasWidth, canvasHeight);
-        for (let i = 0; i < h; i++) {
-            for (let j = 0; j < w; j++) {
-                let val = Math.round(data[i][j]);
-                let r, g, b, a = 255;
-                switch(val) {
-                    case 0: r=35; g=17; b=231; break;
-                    case 1: r=62; g=160; b=23; break;
-                    case 2: r=3; g=19; b=5; break;
-                    case 3: r=21; g=18; b=1; a=168; break;
-                    case 4: r=142; g=109; b=32; break;
-                    case 5: r=4; g=65; b=10; break;
-                    case 6: r=196; g=175; b=16; break;
-                    default: r=128; g=128; b=128; a=128;
-                }
-                const idx = (i * canvasWidth + j) * 4;
-                imgData.data[idx]=r; imgData.data[idx+1]=g; imgData.data[idx+2]=b; imgData.data[idx+3]=a;
-            }
-        }
-        ctx.putImageData(imgData,0,0);
+    // LULC: load PNG image overlay
+    const lupaneBounds = [[-19.10, 27.30], [-18.70, 27.80]]; // adjust to match your PNG extent
+    function loadLulcPng(year, pngUrl) {
+        if (currentLulcLayer) map.removeLayer(currentLulcLayer);
+        currentLulcLayer = L.imageOverlay(pngUrl, lupaneBounds, {
+            opacity: 0.85,
+            interactive: true,
+            attribution: `Land Use/Land Cover ${year}`
+        }).addTo(map);
+        updateLegend();
     }
 
-    // Farm boundary style: yellow gradient fill, yellow outline (from QGIS)
+    // Farm & Forest styles
     const farmStyle = {
-        color: '#f7e137',        // outline color from QGIS (247,225,55)
+        color: '#f7e137',
         weight: 1.5,
-        fillColor: '#fff633',    // light yellow fill (255,246,0)
+        fillColor: '#fff633',
         fillOpacity: 0.6,
         opacity: 0.8
     };
-
-    // Forest style: dark green gradient fill, dark green outline
     const forestStyle = {
-        color: '#388036',        // outline (56,128,54)
+        color: '#388036',
         weight: 1.5,
-        fillColor: '#042d00',    // dark green (4,45,0)
+        fillColor: '#042d00',
         fillOpacity: 0.7,
         opacity: 0.9
     };
@@ -487,7 +474,7 @@
         }
     }
 
-    // ==================== GRAPHS FROM CSV ====================
+    // Graphs from CSV (same as before)
     let farmlandChart, forestChart, waterChart, pieChart, barChart;
     async function loadAndRenderGraphs() {
         try {
@@ -534,7 +521,7 @@
         } catch(err) { console.warn('CSV error', err); }
     }
 
-    // ==================== PDF EXPORT ====================
+    // PDF export
     async function exportToPDF() {
         const { jsPDF } = window.jspdf;
         const element = document.getElementById('mapContainer');
@@ -580,7 +567,7 @@
             })
             .catch(() => console.warn("Using fallback boundary"));
 
-        // Load other vector layers (same as before)
+        // Other vector layers
         function loadOtherGeoJSON(name, url, style, popupField='name') {
             fetch(url).then(r=>r.json()).then(data=>{
                 activeLayers[name] = L.geoJSON(data, { style: style, onEachFeature: (f,l)=>{ if(f.properties) l.bindPopup(f.properties[popupField] || name); } });
@@ -591,30 +578,20 @@
         loadOtherGeoJSON('rivers', 'RIVERS.geojson', { color: '#1e88e5', weight: 2, fillOpacity: 0 });
         loadOtherGeoJSON('waterLines', 'WATER LINES.geojson', { color: '#42a5f5', weight: 2, fillOpacity: 0 });
         loadOtherGeoJSON('roads', 'ROADS.geojson', { color: '#DB1E2A', weight: 2, dashArray: '4,12', lineCap: 'round' });
-        loadOtherGeoJSON('dams', 'DAM.geojson', { color: '#232323', weight: 1, fillColor: '#0000FF', fillOpacity: 0.8 });
+        loadOtherGeoJSON('dams', 'DAMS.geojson', { color: '#232323', weight: 1, fillColor: '#0000FF', fillOpacity: 0.8 });
 
-        // LULC URLs (update with your COG links)
-        const lulcUrls = {
-            2010: 'https://storage.googleapis.com/lupane_lulc_cogs/lulc_2010.tif',
-            2015: 'https://storage.googleapis.com/lupane_lulc_cogs/lulc_2015.tif',
-            2020: 'https://storage.googleapis.com/lupane_lulc_cogs/lulc_2020.tif',
-            2026: 'https://storage.googleapis.com/lupane_lulc_cogs/lulc_2026.tif'
-        };
-        function loadLulcYear(year, url) {
-            if (currentLulcLayer) map.removeLayer(currentLulcLayer);
-            if (!url) return;
-            currentLulcLayer = L.leafletGeotiff(url, {
-                renderer: L.leafletGeotiff.vectorTile({ render: (data,canvas,ctx) => renderLULC(data,ctx,canvas.width,canvas.height) })
-            }).addTo(map);
-            updateLegend();
-        }
+        // LULC PNG dropdown
         document.getElementById('lulcDropdown').onchange = (e) => {
             const val = e.target.value;
-            if (val === '2010') loadLulcYear(2010, lulcUrls[2010]);
-            else if (val === '2015') loadLulcYear(2015, lulcUrls[2015]);
-            else if (val === '2020') loadLulcYear(2020, lulcUrls[2020]);
-            else if (val === '2026') loadLulcYear(2026, lulcUrls[2026]);
-            else { if (currentLulcLayer) map.removeLayer(currentLulcLayer); currentLulcLayer = null; updateLegend(); }
+            if (val === '2010') loadLulcPng('2010', 'LAND USE LAND COVER 2010.png');
+            else if (val === '2015') loadLulcPng('2015', 'LAND USE LAND COVER 2015.png');
+            else if (val === '2020') loadLulcPng('2020', 'LAND USE LAND COVER 2020.png');
+            else if (val === '2026') loadLulcPng('2026', 'LAND USE LAND COVER 2026.png');
+            else {
+                if (currentLulcLayer) map.removeLayer(currentLulcLayer);
+                currentLulcLayer = null;
+                updateLegend();
+            }
         };
 
         // Farm boundaries dropdown
@@ -640,7 +617,7 @@
         };
 
         // Toggle for other layers
-        function toggleLayer(name, layerObj) {
+        function toggleLayer(name) {
             if (!activeLayers[name]) { alert(`Layer ${name} not loaded`); return; }
             if (map.hasLayer(activeLayers[name])) map.removeLayer(activeLayers[name]);
             else map.addLayer(activeLayers[name]);
@@ -654,15 +631,22 @@
         document.getElementById('roadsBtn').onclick = () => toggleLayer('roads');
         document.getElementById('damsBtn').onclick = () => toggleLayer('dams');
 
-        // Legend update
+        // Legend update (includes LULC when PNG visible)
         function updateLegend() {
             const legendDiv = document.getElementById('legendPanel');
             let content = '';
             if (currentLulcLayer && map.hasLayer(currentLulcLayer)) {
-                content += `<strong>LAND COVER (QGIS)</strong><br><p><span style="background:#2311e7;"></span> Water</p><p><span style="background:#3ea017;"></span> Crop Fields</p><p><span style="background:#031305;"></span> Built up Area</p><p><span style="background:#151201;"></span> Rocky Area</p><p><span style="background:#8e6d20;"></span> Bare Land</p><p><span style="background:#04410a;"></span> Forest</p><p><span style="background:#c4af10;"></span> Roads</p><hr>`;
+                content += `<strong>LAND COVER (PNG overlay)</strong><br>
+                    <p><span style="background:#2311e7;"></span> Water</p>
+                    <p><span style="background:#3ea017;"></span> Crop Fields</p>
+                    <p><span style="background:#031305;"></span> Built up Area</p>
+                    <p><span style="background:#151201;"></span> Rocky Area</p>
+                    <p><span style="background:#8e6d20;"></span> Bare Land</p>
+                    <p><span style="background:#04410a;"></span> Forest</p>
+                    <p><span style="background:#c4af10;"></span> Roads</p><hr>`;
             }
             if (activeLayers.farmLayer && map.hasLayer(activeLayers.farmLayer)) {
-                content += `<strong>FARM BOUNDARIES (${farmDropdown.value})</strong><br><p><span style="background:#fff633;"></span> Yellow gradient (farm fields)</p><hr>`;
+                content += `<strong>FARM BOUNDARIES (${farmDropdown.value})</strong><br><p><span style="background:#fff633;"></span> Yellow (farm fields)</p><hr>`;
             }
             if (activeLayers.forestLayer && map.hasLayer(activeLayers.forestLayer)) {
                 content += `<strong>FOREST LAYER (${forestDropdown.value})</strong><br><p><span style="background:#042d00;"></span> Dark green forest</p><hr>`;
@@ -678,7 +662,7 @@
             else legendDiv.style.display = 'none';
         }
 
-        // Conflict reporting (simplified)
+        // Conflict reporting (same as before)
         let conflictPoints = [];
         function updateHeatmap() {
             if (heatLayer) map.removeLayer(heatLayer);
@@ -693,7 +677,7 @@
             showNotification(`New conflict report: ${desc} (${rating})`);
         }
 
-        // Report panel draggable
+        // Draggable report panel
         const reportPanel = document.getElementById('reportPanel');
         const dragHandle = reportPanel.querySelector('.panel-header');
         let offsetX, offsetY, startX, startY;
@@ -709,8 +693,10 @@
             let top = offsetY + (e.clientY - startY);
             left = Math.min(window.innerWidth - reportPanel.offsetWidth - 10, Math.max(10, left));
             top = Math.min(window.innerHeight - reportPanel.offsetHeight - 10, Math.max(10, top));
-            reportPanel.style.left = left + 'px'; reportPanel.style.right = 'auto';
-            reportPanel.style.top = top + 'px'; reportPanel.style.bottom = 'auto';
+            reportPanel.style.left = left + 'px';
+            reportPanel.style.right = 'auto';
+            reportPanel.style.top = top + 'px';
+            reportPanel.style.bottom = 'auto';
         }
         function onMouseUp() { document.removeEventListener('mousemove', onMouseMove); document.removeEventListener('mouseup', onMouseUp); }
 
@@ -757,7 +743,6 @@
             if (!reportPanel.style.left) { reportPanel.style.right = '20px'; reportPanel.style.bottom = '80px'; reportPanel.style.left = 'auto'; reportPanel.style.top = 'auto'; }
         };
         closeReport.onclick = () => reportPanel.style.display = 'none';
-
         function showNotification(msg) {
             if (Notification.permission === 'granted') new Notification('Lupane Monitor', { body: msg });
             else if (Notification.permission !== 'denied') Notification.requestPermission().then(perm => { if (perm === 'granted') new Notification('Lupane Monitor', { body: msg }); });
@@ -766,7 +751,6 @@
             document.getElementById('notifBadge').innerText = notificationCount;
         }
         document.getElementById('notifyIcon').onclick = () => { notificationCount = 0; document.getElementById('notifBadge').innerText = '0'; };
-
         document.getElementById('encroachBtn').onclick = () => alert('Encroachment check placeholder');
         document.getElementById('menuIcon').onclick = () => { const panel = document.getElementById('layerControl'); panel.style.display = panel.style.display === 'none' ? 'block' : 'none'; };
         document.getElementById('graphsIcon').onclick = () => { const panel = document.getElementById('graphsPanel'); panel.style.display = panel.style.display === 'none' ? 'block' : 'none'; if (panel.style.display === 'block') loadAndRenderGraphs(); };
