@@ -333,11 +333,14 @@
             <button class="icon-btn" id="exportPdfIcon"><i class="fas fa-file-pdf"></i></button>
             <button class="icon-btn" id="notifyIcon"><i class="fas fa-bell"></i><span class="notification-badge" id="notifBadge">0</span></button>
             <select id="languageSelect" class="lang-select">
-                <option value="en">English</option><option value="ar">العربية</option><option value="zh">中文</option>
-                <option value="pt">Português</option><option value="fr">Français</option>
+                <option value="en">English</option>
+                <option value="ar">العربية</option>
+                <option value="zh">中文</option>
+                <option value="pt">Português</option>
+                <option value="fr">Français</option>
             </select>
         </div>
-        <div class="map-title">LUPANE LAND USE & WILDLIFE MONITOR</div>
+        <div class="map-title" id="mapTitle">LUPANE LAND USE & WILDLIFE MONITOR</div>
         <div class="basemap-switcher">
             <label><input type="radio" name="basemap" value="map" checked> 🗺️ Map</label>
             <label><input type="radio" name="basemap" value="satellite"> 🛰️ Satellite</label>
@@ -346,52 +349,51 @@
     <div id="map"></div>
     <div class="legend" id="legendPanel"></div>
     <div class="layer-control" id="layerControl">
-        <strong>LAYERS</strong><hr>
+        <strong id="layersTitle">LAYERS</strong><hr>
         <select id="lulcDropdown">
-            <option value="">-- LAND USE LAND COVER --</option>
-            <option value="2010">LAND USE LAND COVER 2010</option>
-            <option value="2015">LAND USE LAND COVER 2015</option>
-            <option value="2020">LAND USE LAND COVER 2020</option>
-            <option value="2026">LAND USE LAND COVER 2026</option>
+            <option value="" id="lulcDefaultOption">-- LAND USE LAND COVER --</option>
+            <option value="2010" id="lulc2010Opt">LAND USE LAND COVER 2010</option>
+            <option value="2015" id="lulc2015Opt">LAND USE LAND COVER 2015</option>
+            <option value="2020" id="lulc2020Opt">LAND USE LAND COVER 2020</option>
+            <option value="2026" id="lulc2026Opt">LAND USE LAND COVER 2026</option>
         </select>
         <hr>
-        <strong>FARM BOUNDARIES</strong>
+        <strong id="farmBoundariesTitle">FARM BOUNDARIES</strong>
         <select id="farmDropdown">
-            <option value="">-- Select Year --</option>
-            <option value="2010">FARMS 2010</option>
-            <option value="2015">FARMS 2015</option>
-            <option value="2020">FARMS 2020</option>
-            <option value="2026">FARMS 2026</option>
+            <option value="" id="farmDefaultOption">-- Select Year --</option>
+            <option value="2010" id="farm2010Opt">FARMS 2010</option>
+            <option value="2015" id="farm2015Opt">FARMS 2015</option>
+            <option value="2020" id="farm2020Opt">FARMS 2020</option>
+            <option value="2026" id="farm2026Opt">FARMS 2026</option>
         </select>
         <hr>
-        <strong>FOREST LAYERS</strong>
+        <strong id="forestLayersTitle">FOREST LAYERS</strong>
         <select id="forestDropdown">
-            <option value="">-- Select Year --</option>
-            <option value="2010">FOREST 2010</option>
-            <option value="2015">FOREST 2015</option>
-            <option value="2020">FOREST 2020</option>
-            <option value="2025">FOREST 2025</option>
+            <option value="" id="forestDefaultOption">-- Select Year --</option>
+            <option value="2010" id="forest2010Opt">FOREST 2010</option>
+            <option value="2015" id="forest2015Opt">FOREST 2015</option>
+            <option value="2020" id="forest2020Opt">FOREST 2020</option>
+            <option value="2025" id="forest2025Opt">FOREST 2025</option>
         </select>
         <hr>
         <button id="lupaneDistrictBtn">LUPANE BOUNDARY DISTRICT</button>
         <button id="nationalParksBtn">NATIONAL PARKS</button>
         <button id="protectedAreasBtn">PROTECTED AREAS WITHIN LUPANE</button>
         <button id="riversBtn">RIVERS</button>
-        <!-- WATER LINES REMOVED -->
         <button id="roadsBtn">ROADS (styled)</button>
         <button id="damsBtn">DAMS</button>
         <hr>
         <button id="encroachBtn">CHECK FARM ENCROACHMENT</button>
     </div>
     <div class="report-panel" id="reportPanel">
-        <div class="panel-header">📢 Report Human-Wildlife Conflict</div>
-        <textarea id="reportDesc" rows="2" placeholder="What happened?"></textarea>
+        <div class="panel-header" id="reportHeader">📢 Report Human-Wildlife Conflict</div>
+        <textarea id="reportDesc" rows="2" placeholder="What happened?" id="reportPlaceholder"></textarea>
         <select id="damageSelect">
-            <option value="">-- Select damage level --</option>
-            <option value="low">Low</option>
-            <option value="moderate">Moderate</option>
-            <option value="high">High</option>
-            <option value="very high">Very High</option>
+            <option value="" id="damageDefault">-- Select damage level --</option>
+            <option value="low" id="damageLow">Low</option>
+            <option value="moderate" id="damageModerate">Moderate</option>
+            <option value="high" id="damageHigh">High</option>
+            <option value="very high" id="damageVeryHigh">Very High</option>
         </select>
         <div class="coord-row">
             <button id="getLocationBtn">📍 Use My GPS</button>
@@ -403,17 +405,17 @@
     </div>
     <div class="graphs-panel" id="graphsPanel">
         <button class="close-graphs" id="closeGraphsBtn">&times;</button>
-        <h3>📊 Land Use Change Statistics</h3>
+        <h3 id="graphsTitle">📊 Land Use Change Statistics</h3>
         <div class="graph-container"><canvas id="farmlandExpansionChart" width="400" height="200"></canvas></div>
         <div class="graph-container"><canvas id="forestLossChart" width="400" height="200"></canvas></div>
         <div class="graph-container"><canvas id="waterChangeChart" width="400" height="200"></canvas></div>
         <div class="graph-container"><canvas id="landUsePieChart" width="400" height="200"></canvas></div>
         <div class="graph-container"><canvas id="barComparisonChart" width="400" height="200"></canvas></div>
-        <p style="font-size:10px; text-align:center;">Data source: lulc_stats.csv</p>
+        <p style="font-size:10px; text-align:center;" id="graphDataCredit">Data source: lulc_stats.csv</p>
     </div>
     <div id="encroachmentDialog" class="encroachment-dialog">
         <div class="dialog-header">
-            <span>🌾 Farm Encroachment Report</span>
+            <span id="encroachTitle">🌾 Farm Encroachment Report</span>
             <button id="closeEncroachDialog">✖</button>
         </div>
         <div class="dialog-content">
@@ -451,6 +453,388 @@
     let currentBaseLayer = null;
     let currentLulcLayer = null;
     let encroachChart = null;
+    let currentLanguage = 'en';
+
+    // ==================== TRANSLATIONS ====================
+    const translations = {
+        en: {
+            mapTitle: "LUPANE LAND USE & WILDLIFE MONITOR",
+            layersTitle: "LAYERS",
+            lulcDefault: "-- LAND USE LAND COVER --",
+            lulc2010: "LAND USE LAND COVER 2010",
+            lulc2015: "LAND USE LAND COVER 2015",
+            lulc2020: "LAND USE LAND COVER 2020",
+            lulc2026: "LAND USE LAND COVER 2026",
+            farmTitle: "FARM BOUNDARIES",
+            farmDefault: "-- Select Year --",
+            farm2010: "FARMS 2010",
+            farm2015: "FARMS 2015",
+            farm2020: "FARMS 2020",
+            farm2026: "FARMS 2026",
+            forestTitle: "FOREST LAYERS",
+            forestDefault: "-- Select Year --",
+            forest2010: "FOREST 2010",
+            forest2015: "FOREST 2015",
+            forest2020: "FOREST 2020",
+            forest2025: "FOREST 2025",
+            lupaneBtn: "LUPANE BOUNDARY DISTRICT",
+            nationalParksBtn: "NATIONAL PARKS",
+            protectedAreasBtn: "PROTECTED AREAS WITHIN LUPANE",
+            riversBtn: "RIVERS",
+            roadsBtn: "ROADS (styled)",
+            damsBtn: "DAMS",
+            encroachBtn: "CHECK FARM ENCROACHMENT",
+            reportHeader: "📢 Report Human-Wildlife Conflict",
+            reportDescPlaceholder: "What happened?",
+            damageDefault: "-- Select damage level --",
+            damageLow: "Low",
+            damageModerate: "Moderate",
+            damageHigh: "High",
+            damageVeryHigh: "Very High",
+            getLocationBtn: "📍 Use My GPS",
+            pickMapBtn: "🗺️ Pick on Map",
+            submitReport: "Submit Report",
+            closeReport: "Close",
+            graphsTitle: "📊 Land Use Change Statistics",
+            graphDataCredit: "Data source: lulc_stats.csv",
+            encroachTitle: "🌾 Farm Encroachment Report",
+            legendLULC: "LAND COVER (PNG overlay)",
+            legendWater: "Water",
+            legendCrop: "Crop Fields",
+            legendBuiltup: "Built up Area",
+            legendRocky: "Rocky Area",
+            legendBare: "Bare Land",
+            legendForest: "Forest",
+            legendRoads: "Roads",
+            legendFarm: "FARM BOUNDARIES",
+            legendFarmDesc: "Yellow with brown edge",
+            legendForestLayer: "FOREST LAYER",
+            legendForestDesc: "Forest (solid green)",
+            legendLupane: "LUPANE BOUNDARY",
+            legendLupaneDesc: "Boundary",
+            legendNationalParks: "NATIONAL PARKS",
+            legendNationalParksDesc: "Park area",
+            legendProtectedAreas: "PROTECTED AREAS",
+            legendProtectedAreasDesc: "Protected zone",
+            legendRivers: "RIVERS",
+            legendRiversDesc: "River lines",
+            legendRoadsDesc: "Roads (dashed)",
+            legendDams: "DAMS",
+            legendDamsDesc: "Dam / Reservoir"
+        },
+        ar: {
+            mapTitle: "مراقبة استخدام الأراضي والحياة البرية في لوباني",
+            layersTitle: "الطبقات",
+            lulcDefault: "-- غطاء الأرض --",
+            lulc2010: "غطاء الأرض 2010",
+            lulc2015: "غطاء الأرض 2015",
+            lulc2020: "غطاء الأرض 2020",
+            lulc2026: "غطاء الأرض 2026",
+            farmTitle: "حدود المزارع",
+            farmDefault: "-- اختر السنة --",
+            farm2010: "مزارع 2010",
+            farm2015: "مزارع 2015",
+            farm2020: "مزارع 2020",
+            farm2026: "مزارع 2026",
+            forestTitle: "طبقات الغابات",
+            forestDefault: "-- اختر السنة --",
+            forest2010: "غابات 2010",
+            forest2015: "غابات 2015",
+            forest2020: "غابات 2020",
+            forest2025: "غابات 2025",
+            lupaneBtn: "منطقة لوباني",
+            nationalParksBtn: "الحدائق الوطنية",
+            protectedAreasBtn: "المناطق المحمية داخل لوباني",
+            riversBtn: "الأنهار",
+            roadsBtn: "الطرق (مُنسَّقة)",
+            damsBtn: "السدود",
+            encroachBtn: "التحقق من التعدي الزراعي",
+            reportHeader: "📢 الإبلاغ عن نزاع الإنسان والحياة البرية",
+            reportDescPlaceholder: "ماذا حدث؟",
+            damageDefault: "-- اختر مستوى الضرر --",
+            damageLow: "منخفض",
+            damageModerate: "متوسط",
+            damageHigh: "مرتفع",
+            damageVeryHigh: "مرتفع جداً",
+            getLocationBtn: "📍 استخدام GPS الخاص بي",
+            pickMapBtn: "🗺️ اختر على الخريطة",
+            submitReport: "إرسال التقرير",
+            closeReport: "إغلاق",
+            graphsTitle: "📊 إحصائيات تغير استخدام الأراضي",
+            graphDataCredit: "مصدر البيانات: lulc_stats.csv",
+            encroachTitle: "🌾 تقرير التعدي الزراعي",
+            legendLULC: "غطاء الأرض (صورة PNG)",
+            legendWater: "المياه",
+            legendCrop: "الأراضي الزراعية",
+            legendBuiltup: "المناطق الحضرية",
+            legendRocky: "مناطق صخرية",
+            legendBare: "الأراضي الجرداء",
+            legendForest: "الغابات",
+            legendRoads: "الطرق",
+            legendFarm: "حدود المزارع",
+            legendFarmDesc: "أصفر بحافة بنية",
+            legendForestLayer: "طبقة الغابات",
+            legendForestDesc: "غابات (أخضر صلب)",
+            legendLupane: "حدود لوباني",
+            legendLupaneDesc: "الحدود",
+            legendNationalParks: "الحدائق الوطنية",
+            legendNationalParksDesc: "منطقة الحديقة",
+            legendProtectedAreas: "المناطق المحمية",
+            legendProtectedAreasDesc: "منطقة محمية",
+            legendRivers: "الأنهار",
+            legendRiversDesc: "خطوط الأنهار",
+            legendRoadsDesc: "الطرق (متقطعة)",
+            legendDams: "السدود",
+            legendDamsDesc: "سد / خزان"
+        },
+        zh: {
+            mapTitle: "卢帕内土地利用与野生动物监测",
+            layersTitle: "图层",
+            lulcDefault: "-- 土地利用/土地覆盖 --",
+            lulc2010: "土地利用/土地覆盖 2010",
+            lulc2015: "土地利用/土地覆盖 2015",
+            lulc2020: "土地利用/土地覆盖 2020",
+            lulc2026: "土地利用/土地覆盖 2026",
+            farmTitle: "农田边界",
+            farmDefault: "-- 选择年份 --",
+            farm2010: "农田 2010",
+            farm2015: "农田 2015",
+            farm2020: "农田 2020",
+            farm2026: "农田 2026",
+            forestTitle: "森林图层",
+            forestDefault: "-- 选择年份 --",
+            forest2010: "森林 2010",
+            forest2015: "森林 2015",
+            forest2020: "森林 2020",
+            forest2025: "森林 2025",
+            lupaneBtn: "卢帕内区",
+            nationalParksBtn: "国家公园",
+            protectedAreasBtn: "卢帕内保护区",
+            riversBtn: "河流",
+            roadsBtn: "道路（样式）",
+            damsBtn: "水坝",
+            encroachBtn: "检查农田侵占",
+            reportHeader: "📢 报告人类与野生动物冲突",
+            reportDescPlaceholder: "发生了什么？",
+            damageDefault: "-- 选择损害等级 --",
+            damageLow: "低",
+            damageModerate: "中等",
+            damageHigh: "高",
+            damageVeryHigh: "非常高",
+            getLocationBtn: "📍 使用我的GPS",
+            pickMapBtn: "🗺️ 在地图上选择",
+            submitReport: "提交报告",
+            closeReport: "关闭",
+            graphsTitle: "📊 土地利用变化统计",
+            graphDataCredit: "数据来源: lulc_stats.csv",
+            encroachTitle: "🌾 农田侵占报告",
+            legendLULC: "土地覆盖（PNG叠加）",
+            legendWater: "水域",
+            legendCrop: "农田",
+            legendBuiltup: "建成区",
+            legendRocky: "岩石区",
+            legendBare: "裸地",
+            legendForest: "森林",
+            legendRoads: "道路",
+            legendFarm: "农田边界",
+            legendFarmDesc: "黄色带棕色边缘",
+            legendForestLayer: "森林图层",
+            legendForestDesc: "森林（纯绿色）",
+            legendLupane: "卢帕内边界",
+            legendLupaneDesc: "边界",
+            legendNationalParks: "国家公园",
+            legendNationalParksDesc: "公园区域",
+            legendProtectedAreas: "保护区",
+            legendProtectedAreasDesc: "保护区",
+            legendRivers: "河流",
+            legendRiversDesc: "河流线",
+            legendRoadsDesc: "道路（虚线）",
+            legendDams: "水坝",
+            legendDamsDesc: "水坝/水库"
+        },
+        pt: {
+            mapTitle: "Monitoramento do Uso da Terra e Vida Selvagem em Lupane",
+            layersTitle: "CAMADAS",
+            lulcDefault: "-- USO DA TERRA --",
+            lulc2010: "Uso da Terra 2010",
+            lulc2015: "Uso da Terra 2015",
+            lulc2020: "Uso da Terra 2020",
+            lulc2026: "Uso da Terra 2026",
+            farmTitle: "LIMITES AGRÍCOLAS",
+            farmDefault: "-- Selecionar Ano --",
+            farm2010: "FAZENDAS 2010",
+            farm2015: "FAZENDAS 2015",
+            farm2020: "FAZENDAS 2020",
+            farm2026: "FAZENDAS 2026",
+            forestTitle: "CAMADAS FLORESTAIS",
+            forestDefault: "-- Selecionar Ano --",
+            forest2010: "FLORESTA 2010",
+            forest2015: "FLORESTA 2015",
+            forest2020: "FLORESTA 2020",
+            forest2025: "FLORESTA 2025",
+            lupaneBtn: "DISTRITO DE LUPANE",
+            nationalParksBtn: "PARQUES NACIONAIS",
+            protectedAreasBtn: "ÁREAS PROTEGIDAS EM LUPANE",
+            riversBtn: "RIOS",
+            roadsBtn: "ESTRADAS (estilizadas)",
+            damsBtn: "REPRESAS",
+            encroachBtn: "VERIFICAR INVASÃO AGRÍCOLA",
+            reportHeader: "📢 Relatar Conflito Humano-Fauna",
+            reportDescPlaceholder: "O que aconteceu?",
+            damageDefault: "-- Selecionar nível de dano --",
+            damageLow: "Baixo",
+            damageModerate: "Moderado",
+            damageHigh: "Alto",
+            damageVeryHigh: "Muito Alto",
+            getLocationBtn: "📍 Usar meu GPS",
+            pickMapBtn: "🗺️ Escolher no mapa",
+            submitReport: "Enviar Relatório",
+            closeReport: "Fechar",
+            graphsTitle: "📊 Estatísticas de Mudança do Uso da Terra",
+            graphDataCredit: "Fonte: lulc_stats.csv",
+            encroachTitle: "🌾 Relatório de Invasão Agrícola",
+            legendLULC: "COBERTURA DO SOLO (PNG)",
+            legendWater: "Água",
+            legendCrop: "Campos Agrícolas",
+            legendBuiltup: "Área Construída",
+            legendRocky: "Área Rochosa",
+            legendBare: "Terra Nua",
+            legendForest: "Floresta",
+            legendRoads: "Estradas",
+            legendFarm: "LIMITES AGRÍCOLAS",
+            legendFarmDesc: "Amarelo com borda marrom",
+            legendForestLayer: "CAMADA FLORESTAL",
+            legendForestDesc: "Floresta (verde sólido)",
+            legendLupane: "LIMITE DE LUPANE",
+            legendLupaneDesc: "Limite",
+            legendNationalParks: "PARQUES NACIONAIS",
+            legendNationalParksDesc: "Área do parque",
+            legendProtectedAreas: "ÁREAS PROTEGIDAS",
+            legendProtectedAreasDesc: "Zona protegida",
+            legendRivers: "RIOS",
+            legendRiversDesc: "Linhas de rios",
+            legendRoadsDesc: "Estradas (tracejadas)",
+            legendDams: "REPRESAS",
+            legendDamsDesc: "Represa / Reservatório"
+        },
+        fr: {
+            mapTitle: "Surveillance de l'utilisation des terres et de la faune à Lupane",
+            layersTitle: "COUCHES",
+            lulcDefault: "-- UTILISATION DES TERRES --",
+            lulc2010: "Occupation du sol 2010",
+            lulc2015: "Occupation du sol 2015",
+            lulc2020: "Occupation du sol 2020",
+            lulc2026: "Occupation du sol 2026",
+            farmTitle: "LIMITES AGRICOLES",
+            farmDefault: "-- Sélectionner l'année --",
+            farm2010: "FERMES 2010",
+            farm2015: "FERMES 2015",
+            farm2020: "FERMES 2020",
+            farm2026: "FERMES 2026",
+            forestTitle: "COUCHES FORESTIÈRES",
+            forestDefault: "-- Sélectionner l'année --",
+            forest2010: "FORÊT 2010",
+            forest2015: "FORÊT 2015",
+            forest2020: "FORÊT 2020",
+            forest2025: "FORÊT 2025",
+            lupaneBtn: "DISTRICT DE LUPANE",
+            nationalParksBtn: "PARCS NATIONAUX",
+            protectedAreasBtn: "ZONES PROTÉGÉES DANS LUPANE",
+            riversBtn: "RIVIÈRES",
+            roadsBtn: "ROUTES (stylisées)",
+            damsBtn: "BARRAGES",
+            encroachBtn: "VÉRIFIER L'EMPIÉTEMENT AGRICOLE",
+            reportHeader: "📢 Signaler un conflit homme-faune",
+            reportDescPlaceholder: "Que s'est-il passé ?",
+            damageDefault: "-- Sélectionner le niveau de dégât --",
+            damageLow: "Faible",
+            damageModerate: "Modéré",
+            damageHigh: "Élevé",
+            damageVeryHigh: "Très élevé",
+            getLocationBtn: "📍 Utiliser mon GPS",
+            pickMapBtn: "🗺️ Choisir sur la carte",
+            submitReport: "Soumettre le rapport",
+            closeReport: "Fermer",
+            graphsTitle: "📊 Statistiques de changement d'utilisation des terres",
+            graphDataCredit: "Source: lulc_stats.csv",
+            encroachTitle: "🌾 Rapport d'empiétement agricole",
+            legendLULC: "COUVERTURE DU SOL (PNG)",
+            legendWater: "Eau",
+            legendCrop: "Champs cultivés",
+            legendBuiltup: "Zone bâtie",
+            legendRocky: "Zone rocheuse",
+            legendBare: "Sol nu",
+            legendForest: "Forêt",
+            legendRoads: "Routes",
+            legendFarm: "LIMITES AGRICOLES",
+            legendFarmDesc: "Jaune avec bordure marron",
+            legendForestLayer: "COUCHE FORESTIÈRE",
+            legendForestDesc: "Forêt (vert uni)",
+            legendLupane: "LIMITE DE LUPANE",
+            legendLupaneDesc: "Limite",
+            legendNationalParks: "PARCS NATIONAUX",
+            legendNationalParksDesc: "Zone du parc",
+            legendProtectedAreas: "ZONES PROTÉGÉES",
+            legendProtectedAreasDesc: "Zone protégée",
+            legendRivers: "RIVIÈRES",
+            legendRiversDesc: "Lignes de rivière",
+            legendRoadsDesc: "Routes (tirets)",
+            legendDams: "BARRAGES",
+            legendDamsDesc: "Barrage / Réservoir"
+        }
+    };
+
+    function updateUILanguage(lang) {
+        const t = translations[lang];
+        if (!t) return;
+        document.getElementById('mapTitle').innerText = t.mapTitle;
+        document.getElementById('layersTitle').innerText = t.layersTitle;
+        document.getElementById('lulcDefaultOption').innerText = t.lulcDefault;
+        document.getElementById('lulc2010Opt').innerText = t.lulc2010;
+        document.getElementById('lulc2015Opt').innerText = t.lulc2015;
+        document.getElementById('lulc2020Opt').innerText = t.lulc2020;
+        document.getElementById('lulc2026Opt').innerText = t.lulc2026;
+        document.getElementById('farmBoundariesTitle').innerText = t.farmTitle;
+        document.getElementById('farmDefaultOption').innerText = t.farmDefault;
+        document.getElementById('farm2010Opt').innerText = t.farm2010;
+        document.getElementById('farm2015Opt').innerText = t.farm2015;
+        document.getElementById('farm2020Opt').innerText = t.farm2020;
+        document.getElementById('farm2026Opt').innerText = t.farm2026;
+        document.getElementById('forestLayersTitle').innerText = t.forestTitle;
+        document.getElementById('forestDefaultOption').innerText = t.forestDefault;
+        document.getElementById('forest2010Opt').innerText = t.forest2010;
+        document.getElementById('forest2015Opt').innerText = t.forest2015;
+        document.getElementById('forest2020Opt').innerText = t.forest2020;
+        document.getElementById('forest2025Opt').innerText = t.forest2025;
+        document.getElementById('lupaneDistrictBtn').innerText = t.lupaneBtn;
+        document.getElementById('nationalParksBtn').innerText = t.nationalParksBtn;
+        document.getElementById('protectedAreasBtn').innerText = t.protectedAreasBtn;
+        document.getElementById('riversBtn').innerText = t.riversBtn;
+        document.getElementById('roadsBtn').innerText = t.roadsBtn;
+        document.getElementById('damsBtn').innerText = t.damsBtn;
+        document.getElementById('encroachBtn').innerText = t.encroachBtn;
+        document.getElementById('reportHeader').innerText = t.reportHeader;
+        document.getElementById('reportDesc').placeholder = t.reportDescPlaceholder;
+        document.getElementById('damageDefault').innerText = t.damageDefault;
+        document.getElementById('damageLow').innerText = t.damageLow;
+        document.getElementById('damageModerate').innerText = t.damageModerate;
+        document.getElementById('damageHigh').innerText = t.damageHigh;
+        document.getElementById('damageVeryHigh').innerText = t.damageVeryHigh;
+        document.getElementById('getLocationBtn').innerText = t.getLocationBtn;
+        document.getElementById('pickMapBtn').innerText = t.pickMapBtn;
+        document.getElementById('submitReportBtn').innerText = t.submitReport;
+        document.getElementById('closeReportBtn').innerText = t.closeReport;
+        document.getElementById('graphsTitle').innerText = t.graphsTitle;
+        document.getElementById('graphDataCredit').innerText = t.graphDataCredit;
+        document.getElementById('encroachTitle').innerText = t.encroachTitle;
+        // Legend is dynamic – we rebuild it in updateLegend based on visible layers and translations.
+        // We'll also update the graph titles (already set via Chart.js, but we'll reload charts if needed)
+        // For graph texts, the charts themselves contain labels – we can destroy and recreate them,
+        // but to keep it simple, we'll just update the canvas titles via chart options? Not necessary.
+        // We'll just call a function to redraw the graphs (they already read from CSV, not language dependent except the text above).
+        // The legend will be updated via updateLegend() call after language change.
+        if (typeof updateLegend === 'function') updateLegend();
+    }
 
     // Basemaps
     const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' });
@@ -475,7 +859,7 @@
         updateLegend();
     }
 
-    // Forest style (solid green)
+    // Forest style
     const forestStyle = {
         color: '#4DAF4A',
         weight: 2,
@@ -483,16 +867,14 @@
         fillOpacity: 0.8,
         opacity: 0.9
     };
-    // Farm style: yellow fill with brown edge line
     const farmStyle = {
-        color: '#8B4513',   // brown edge
-        weight: 2.5,        // thicker outline
+        color: '#8B4513',
+        weight: 2.5,
         fillColor: '#fff633',
         fillOpacity: 0.6,
         opacity: 0.8
     };
 
-    // Load GeoJSON layer and store raw data for encroachment
     function loadGeoJSONLayer(name, url, style, popupField = 'Name') {
         fetch(url)
             .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
@@ -523,7 +905,7 @@
         }
     }
 
-    // ==================== ENCROACHMENT ====================
+    // Encroachment
     async function calculateEncroachmentIntegrated() {
         const farmYear = document.getElementById('farmDropdown').value;
         const forestYear = document.getElementById('forestDropdown').value;
@@ -609,7 +991,6 @@
         showNotification(msg);
     }
 
-    // ==================== NOTIFICATION ====================
     function showNotification(msg) {
         if (Notification.permission === 'granted') {
             new Notification('Lupane Monitor', { body: msg });
@@ -622,7 +1003,7 @@
         document.getElementById('notifBadge').innerText = notificationCount;
     }
 
-    // ==================== GRAPHS ====================
+    // Graphs
     let farmlandChart, forestChart, waterChart, pieChart, barChart;
     async function loadAndRenderGraphs() {
         try {
@@ -669,7 +1050,6 @@
         } catch(err) { console.warn('CSV error', err); }
     }
 
-    // ==================== PDF EXPORT ====================
     async function exportToPDF() {
         const { jsPDF } = window.jspdf;
         const element = document.getElementById('mapContainer');
@@ -685,7 +1065,6 @@
         } catch(err) { alert('PDF export failed'); } finally { element.style.overflow = originalOverflow; }
     }
 
-    // ==================== MAKE ENCROACHMENT DIALOG DRAGGABLE ====================
     function makeDraggable(dialogEl, handleSelector) {
         const handle = dialogEl.querySelector(handleSelector);
         let startX, startY, initialLeft, initialTop, startMouseX, startMouseY;
@@ -718,7 +1097,6 @@
         }
     }
 
-    // ==================== MAP INIT ====================
     function initMap() {
         map = L.map('map').setView([-18.92, 27.55], 10);
         currentBaseLayer = osmLayer;
@@ -765,11 +1143,9 @@
         loadOtherGeoJSON('nationalParks', 'NATIONAL PARKS.geojson', { color: '#ff6600', weight: 2, fillOpacity: 0.3 });
         loadOtherGeoJSON('protectedAreas', 'PROTECTED AREAS WITHIN LUPANE.geojson', { color: '#00ced1', weight: 2, fillOpacity: 0.3 });
         loadOtherGeoJSON('rivers', 'RIVERS.geojson', { color: '#1e88e5', weight: 2, fillOpacity: 0 });
-        // Water lines removed – no loadOtherGeoJSON call for 'waterLines'
         loadOtherGeoJSON('roads', 'ROADS.geojson', { color: '#DB1E2A', weight: 2, dashArray: '4,12', lineCap: 'round' });
         loadOtherGeoJSON('dams', 'DAM.geojson', { color: '#232323', weight: 1, fillColor: '#0000FF', fillOpacity: 0.8 }, 'DAM_NAME');
 
-        // LULC PNG
         document.getElementById('lulcDropdown').onchange = (e) => {
             const val = e.target.value;
             if (val === '2010') loadLulcPng('2010', 'LAND USE LAND COVER 2010.png');
@@ -779,7 +1155,6 @@
             else { if (currentLulcLayer) map.removeLayer(currentLulcLayer); currentLulcLayer = null; updateLegend(); }
         };
 
-        // Farm boundaries dropdown (updated style)
         const farmDropdown = document.getElementById('farmDropdown');
         farmDropdown.onchange = () => {
             const year = farmDropdown.value;
@@ -809,7 +1184,6 @@
             }
         };
 
-        // Forest layers dropdown
         const forestDropdown = document.getElementById('forestDropdown');
         forestDropdown.onchange = () => {
             const year = forestDropdown.value;
@@ -849,7 +1223,6 @@
         document.getElementById('nationalParksBtn').onclick = () => toggleLayer('nationalParks');
         document.getElementById('protectedAreasBtn').onclick = () => toggleLayer('protectedAreas');
         document.getElementById('riversBtn').onclick = () => toggleLayer('rivers');
-        // water lines button removed – no handler
         document.getElementById('roadsBtn').onclick = () => toggleLayer('roads');
         document.getElementById('damsBtn').onclick = () => toggleLayer('dams');
 
@@ -861,35 +1234,35 @@
         const encroachDialog = document.getElementById('encroachmentDialog');
         makeDraggable(encroachDialog, '.dialog-header');
 
-        function updateLegend() {
+        window.updateLegend = function() {
             const legendDiv = document.getElementById('legendPanel');
             let content = '';
+            const t = translations[currentLanguage];
             if (currentLulcLayer && map.hasLayer(currentLulcLayer)) {
-                content += `<strong>LAND COVER (PNG overlay)</strong><br>
-                    <p><span style="background:#2311e7;"></span> Water</p>
-                    <p><span style="background:#3ea017;"></span> Crop Fields</p>
-                    <p><span style="background:#031305;"></span> Built up Area</p>
-                    <p><span style="background:#151201;"></span> Rocky Area</p>
-                    <p><span style="background:#8e6d20;"></span> Bare Land</p>
-                    <p><span style="background:#04410a;"></span> Forest</p>
-                    <p><span style="background:#c4af10;"></span> Roads</p><hr>`;
+                content += `<strong>${t.legendLULC}</strong><br>
+                    <p><span style="background:#2311e7;"></span> ${t.legendWater}</p>
+                    <p><span style="background:#3ea017;"></span> ${t.legendCrop}</p>
+                    <p><span style="background:#031305;"></span> ${t.legendBuiltup}</p>
+                    <p><span style="background:#151201;"></span> ${t.legendRocky}</p>
+                    <p><span style="background:#8e6d20;"></span> ${t.legendBare}</p>
+                    <p><span style="background:#04410a;"></span> ${t.legendForest}</p>
+                    <p><span style="background:#c4af10;"></span> ${t.legendRoads}</p><hr>`;
             }
             if (activeLayers.farmLayer && map.hasLayer(activeLayers.farmLayer)) {
-                content += `<strong>FARM BOUNDARIES (${farmDropdown.value})</strong><br><p><span style="background:#fff633;"></span> Yellow with brown edge</p><hr>`;
+                content += `<strong>${t.legendFarm}</strong><br><p><span style="background:#fff633;"></span> ${t.legendFarmDesc}</p><hr>`;
             }
             if (activeLayers.forestLayer && map.hasLayer(activeLayers.forestLayer)) {
-                content += `<strong>FOREST LAYER (${forestDropdown.value})</strong><br><p>🌳 <span style="background:#4DAF4A;"></span> Forest (solid green)</p><hr>`;
+                content += `<strong>${t.legendForestLayer}</strong><br><p>🌳 <span style="background:#4DAF4A;"></span> ${t.legendForestDesc}</p><hr>`;
             }
-            if (activeLayers.lupaneDistrict && map.hasLayer(activeLayers.lupaneDistrict)) content += `<strong>LUPANE BOUNDARY</strong><br><p><span style="background:#060509;"></span> Boundary</p><hr>`;
-            if (activeLayers.nationalParks && map.hasLayer(activeLayers.nationalParks)) content += `<strong>NATIONAL PARKS</strong><br><p><span style="background:#ff6600;"></span> Park area</p><hr>`;
-            if (activeLayers.protectedAreas && map.hasLayer(activeLayers.protectedAreas)) content += `<strong>PROTECTED AREAS</strong><br><p><span style="background:#00ced1;"></span> Protected zone</p><hr>`;
-            if (activeLayers.rivers && map.hasLayer(activeLayers.rivers)) content += `<strong>RIVERS</strong><br><p><span style="background:#1e88e5;"></span> River lines</p><hr>`;
-            // water lines legend removed
-            if (activeLayers.roads && map.hasLayer(activeLayers.roads)) content += `<strong>ROADS</strong><br><p><span style="background:#DB1E2A;"></span> Roads (dashed)</p><hr>`;
-            if (activeLayers.dams && map.hasLayer(activeLayers.dams)) content += `<strong>DAMS</strong><br><p><span style="background:#0000FF;"></span> Dam / Reservoir</p><hr>`;
+            if (activeLayers.lupaneDistrict && map.hasLayer(activeLayers.lupaneDistrict)) content += `<strong>${t.legendLupane}</strong><br><p><span style="background:#060509;"></span> ${t.legendLupaneDesc}</p><hr>`;
+            if (activeLayers.nationalParks && map.hasLayer(activeLayers.nationalParks)) content += `<strong>${t.legendNationalParks}</strong><br><p><span style="background:#ff6600;"></span> ${t.legendNationalParksDesc}</p><hr>`;
+            if (activeLayers.protectedAreas && map.hasLayer(activeLayers.protectedAreas)) content += `<strong>${t.legendProtectedAreas}</strong><br><p><span style="background:#00ced1;"></span> ${t.legendProtectedAreasDesc}</p><hr>`;
+            if (activeLayers.rivers && map.hasLayer(activeLayers.rivers)) content += `<strong>${t.legendRivers}</strong><br><p><span style="background:#1e88e5;"></span> ${t.legendRiversDesc}</p><hr>`;
+            if (activeLayers.roads && map.hasLayer(activeLayers.roads)) content += `<strong>${t.legendRoads}</strong><br><p><span style="background:#DB1E2A;"></span> ${t.legendRoadsDesc}</p><hr>`;
+            if (activeLayers.dams && map.hasLayer(activeLayers.dams)) content += `<strong>${t.legendDams}</strong><br><p><span style="background:#0000FF;"></span> ${t.legendDamsDesc}</p><hr>`;
             if (content) { legendDiv.innerHTML = content; legendDiv.style.display = 'block'; }
             else legendDiv.style.display = 'none';
-        }
+        };
 
         map.on('click', function(e) {
             if (currentLulcLayer && map.hasLayer(currentLulcLayer)) {
@@ -903,7 +1276,7 @@
             }
         });
 
-        // Conflict reporting (unchanged)
+        // Conflict reporting
         let conflictPoints = [];
         function updateHeatmap() {
             if (heatLayer) map.removeLayer(heatLayer);
@@ -918,7 +1291,6 @@
             showNotification(`New conflict report: ${desc} (${rating})`);
         }
 
-        // Draggable report panel (unchanged)
         const reportPanel = document.getElementById('reportPanel');
         const dragHandle = reportPanel.querySelector('.panel-header');
         let offsetX, offsetY, startX, startY;
@@ -990,6 +1362,19 @@
         document.getElementById('graphsIcon').onclick = () => { const panel = document.getElementById('graphsPanel'); panel.style.display = panel.style.display === 'none' ? 'block' : 'none'; if (panel.style.display === 'block') loadAndRenderGraphs(); };
         document.getElementById('closeGraphsBtn').onclick = () => document.getElementById('graphsPanel').style.display = 'none';
         document.getElementById('exportPdfIcon').onclick = exportToPDF;
+
+        // Language switcher
+        const langSelect = document.getElementById('languageSelect');
+        langSelect.addEventListener('change', (e) => {
+            currentLanguage = e.target.value;
+            updateUILanguage(currentLanguage);
+            updateLegend();
+            // Also update graph titles if they exist (they are in the panel, already translated via HTML)
+            // No need to reload charts because their data is independent.
+        });
+        // Set initial language
+        currentLanguage = 'en';
+        updateUILanguage('en');
 
         updateHeatmap();
         map.fitBounds([[-19.05,27.35],[-18.80,27.70]]);
