@@ -13,9 +13,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
-        /* (same styles as before – unchanged) */
+        /* (styles unchanged, except added .encroachment-dialog .dialog-header for dragging) */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', sans-serif; overflow: hidden; }
+        
         .login-modal {
             position: fixed;
             top: 0;
@@ -262,6 +263,7 @@
             font-size: 10px;
             font-weight: bold;
         }
+        /* Encroachment dialog – draggable */
         .encroachment-dialog {
             position: absolute;
             top: 100px;
@@ -272,22 +274,34 @@
             backdrop-filter: blur(8px);
             border-radius: 12px;
             color: white;
-            padding: 15px;
+            padding: 0; /* padding removed, added to inner divs */
             z-index: 2000;
             display: none;
             border: 2px solid #ff6600;
             box-shadow: 0 4px 20px rgba(0,0,0,0.5);
         }
-        .encroachment-dialog h4 { margin: 0 0 10px 0; text-align: center; }
-        .encroachment-dialog p { margin: 5px 0; }
-        .encroachment-dialog button {
+        .encroachment-dialog .dialog-header {
+            cursor: move;
+            background: rgba(0,0,0,0.6);
+            padding: 10px 15px;
+            border-radius: 10px 10px 0 0;
+            font-weight: bold;
+            border-bottom: 1px solid #ff6600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .encroachment-dialog .dialog-header button {
             background: #d32f2f;
             border: none;
             color: white;
             padding: 5px 10px;
             border-radius: 5px;
             cursor: pointer;
-            float: right;
+            font-size: 14px;
+        }
+        .encroachment-dialog .dialog-content {
+            padding: 15px;
         }
         .encroachment-dialog canvas { max-height: 200px; margin-top: 10px; }
         @media (max-width: 700px) {
@@ -400,11 +414,16 @@
         <div class="graph-container"><canvas id="barComparisonChart" width="400" height="200"></canvas></div>
         <p style="font-size:10px; text-align:center;">Data source: lulc_stats.csv</p>
     </div>
+    <!-- Draggable Encroachment Dialog -->
     <div id="encroachmentDialog" class="encroachment-dialog">
-        <button id="closeEncroachDialog">✖</button>
-        <h4>🌾 Farm Encroachment Report</h4>
-        <div id="encroachmentStats"></div>
-        <canvas id="encroachChart" width="300" height="150"></canvas>
+        <div class="dialog-header">
+            <span>🌾 Farm Encroachment Report</span>
+            <button id="closeEncroachDialog">✖</button>
+        </div>
+        <div class="dialog-content">
+            <div id="encroachmentStats"></div>
+            <canvas id="encroachChart" width="300" height="150"></canvas>
+        </div>
     </div>
 </div>
 
@@ -583,30 +602,27 @@
                 plugins: { legend: { position: 'top' }, tooltip: { callbacks: { label: (ctx) => `${ctx.raw.toFixed(2)} ha` } } }
             }
         });
-        document.getElementById('encroachmentDialog').style.display = 'block';
+        // Show the dialog and ensure it's draggable (already set up)
+        const dialog = document.getElementById('encroachmentDialog');
+        dialog.style.display = 'block';
+        // Ensure it's not off-screen
+        if (!dialog.style.left || dialog.style.left === 'auto') {
+            dialog.style.left = '50%';
+            dialog.style.transform = 'translateX(-50%)';
+        }
         const msg = `⚠️ Farm encroachment: ${areaInProtected.toFixed(2)} ha into protected areas (${percentProtected}%), ${areaInForest.toFixed(2)} ha into forest (${percentForest}%).`;
         showNotification(msg);
     }
 
-    // ==================== NOTIFICATION (FIXED) ====================
+    // ==================== NOTIFICATION ====================
     function showNotification(msg) {
-        // Always request permission if not already granted/denied
         if (Notification.permission === 'granted') {
             new Notification('Lupane Monitor', { body: msg });
         } else if (Notification.permission !== 'denied') {
             Notification.requestPermission().then(perm => {
-                if (perm === 'granted') {
-                    new Notification('Lupane Monitor', { body: msg });
-                } else {
-                    // If denied, still show an alert so user knows
-                    console.warn('Notifications blocked');
-                }
+                if (perm === 'granted') new Notification('Lupane Monitor', { body: msg });
             });
-        } else {
-            // permission already denied – show alert as fallback (optional)
-            console.warn('Notifications blocked by user');
         }
-        // Increment badge count regardless of permission
         notificationCount++;
         document.getElementById('notifBadge').innerText = notificationCount;
     }
@@ -672,6 +688,40 @@
             pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
             pdf.save('lupane_map_report.pdf');
         } catch(err) { alert('PDF export failed'); } finally { element.style.overflow = originalOverflow; }
+    }
+
+    // ==================== MAKE ENCROACHMENT DIALOG DRAGGABLE ====================
+    function makeDraggable(dialogEl, handleSelector) {
+        const handle = dialogEl.querySelector(handleSelector);
+        let startX, startY, initialLeft, initialTop, startMouseX, startMouseY;
+        handle.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            startMouseX = e.clientX;
+            startMouseY = e.clientY;
+            const rect = dialogEl.getBoundingClientRect();
+            initialLeft = rect.left;
+            initialTop = rect.top;
+            startX = initialLeft;
+            startY = initialTop;
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+        });
+        function onMouseMove(e) {
+            const dx = e.clientX - startMouseX;
+            const dy = e.clientY - startMouseY;
+            let left = startX + dx;
+            let top = startY + dy;
+            // constrain within window
+            left = Math.min(window.innerWidth - dialogEl.offsetWidth - 10, Math.max(10, left));
+            top = Math.min(window.innerHeight - dialogEl.offsetHeight - 10, Math.max(10, top));
+            dialogEl.style.left = left + 'px';
+            dialogEl.style.top = top + 'px';
+            dialogEl.style.transform = 'none'; // remove translateX centering
+        }
+        function onMouseUp() {
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+        }
     }
 
     // ==================== MAP INIT ====================
@@ -814,6 +864,10 @@
             document.getElementById('encroachmentDialog').style.display = 'none';
         };
 
+        // Make the encroachment dialog draggable
+        const encroachDialog = document.getElementById('encroachmentDialog');
+        makeDraggable(encroachDialog, '.dialog-header');
+
         function updateLegend() {
             const legendDiv = document.getElementById('legendPanel');
             let content = '';
@@ -856,7 +910,7 @@
             }
         });
 
-        // Conflict reporting
+        // Conflict reporting (unchanged)
         let conflictPoints = [];
         function updateHeatmap() {
             if (heatLayer) map.removeLayer(heatLayer);
@@ -871,7 +925,7 @@
             showNotification(`New conflict report: ${desc} (${rating})`);
         }
 
-        // Draggable report panel
+        // Draggable report panel (unchanged)
         const reportPanel = document.getElementById('reportPanel');
         const dragHandle = reportPanel.querySelector('.panel-header');
         let offsetX, offsetY, startX, startY;
