@@ -13,9 +13,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
+        /* (same styles as before – unchanged) */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', sans-serif; overflow: hidden; }
-        
         .login-modal {
             position: fixed;
             top: 0;
@@ -447,7 +447,7 @@
         currentBaseLayer.addTo(map);
     }
 
-    // LULC PNG bounds (corrected)
+    // LULC PNG bounds
     const lupaneBounds = [[-19.5664, 27.0994], [-18.1749, 28.6704]];
 
     function loadLulcPng(year, pngUrl) {
@@ -460,7 +460,7 @@
         updateLegend();
     }
 
-    // Forest style: solid fill using colour from QGIS (#4DAF4A) – tree icon will appear in legend
+    // Forest style (solid green from QGIS)
     const forestStyle = {
         color: '#4DAF4A',
         weight: 2,
@@ -468,8 +468,6 @@
         fillOpacity: 0.8,
         opacity: 0.9
     };
-
-    // Farm style (unchanged)
     const farmStyle = {
         color: '#f7e137',
         weight: 1.5,
@@ -478,7 +476,7 @@
         opacity: 0.8
     };
 
-    // Load a GeoJSON layer and store raw data for encroachment
+    // Load GeoJSON layer and store raw data for encroachment
     function loadGeoJSONLayer(name, url, style, popupField = 'Name') {
         fetch(url)
             .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
@@ -494,7 +492,7 @@
                         l.bindPopup(popupContent);
                     }
                 });
-                layer._geojsonData = data; // store for encroachment
+                layer._geojsonData = data;
                 activeLayers[name] = layer;
                 layer.addTo(map);
                 updateLegend();
@@ -509,56 +507,45 @@
         }
     }
 
-    // ==================== ENCROACHMENT INTEGRATED ====================
+    // ==================== ENCROACHMENT ====================
     async function calculateEncroachmentIntegrated() {
         const farmYear = document.getElementById('farmDropdown').value;
         const forestYear = document.getElementById('forestDropdown').value;
-        
         if (!farmYear) {
             alert('Please select a farm year from the dropdown first.');
             return;
         }
-        
         let farmLayer = activeLayers.farmLayer;
         if (!farmLayer || !farmLayer._geojsonData) {
             alert('Farm data not available. Please select a farm year to load it.');
             return;
         }
-        
         let protectedLayer = activeLayers.protectedAreas;
         if (!protectedLayer || !protectedLayer._geojsonData) {
-            alert('Protected areas data not available. Make sure the layer is loaded.');
+            alert('Protected areas data not available.');
             return;
         }
-        
         let forestLayer = null;
         if (forestYear) {
             forestLayer = activeLayers.forestLayer;
             if (!forestLayer || !forestLayer._geojsonData) {
-                alert(`Forest data for ${forestYear} not available. Please select the forest year.`);
+                alert(`Forest data for ${forestYear} not available.`);
                 return;
             }
         }
-        
         const farmData = farmLayer._geojsonData;
         const protectedData = protectedLayer._geojsonData;
         const forestData = forestLayer ? forestLayer._geojsonData : null;
-        
-        let totalFarmArea = 0;
-        let areaInProtected = 0;
-        let areaInForest = 0;
-        
+        let totalFarmArea = 0, areaInProtected = 0, areaInForest = 0;
         turf.featureEach(farmData, (farmFeature) => {
             const farmArea = turf.area(farmFeature) / 10000;
             totalFarmArea += farmArea;
-            
             turf.featureEach(protectedData, (protFeature) => {
                 if (turf.booleanIntersects(farmFeature, protFeature)) {
                     const intersection = turf.intersect(farmFeature, protFeature);
                     if (intersection) areaInProtected += turf.area(intersection) / 10000;
                 }
             });
-            
             if (forestData) {
                 turf.featureEach(forestData, (forestFeature) => {
                     if (turf.booleanIntersects(farmFeature, forestFeature)) {
@@ -568,17 +555,13 @@
                 });
             }
         });
-        
         const percentProtected = totalFarmArea > 0 ? (areaInProtected / totalFarmArea * 100).toFixed(2) : 0;
         const percentForest = totalFarmArea > 0 ? (areaInForest / totalFarmArea * 100).toFixed(2) : 0;
-        
-        const statsDiv = document.getElementById('encroachmentStats');
-        statsDiv.innerHTML = `
+        document.getElementById('encroachmentStats').innerHTML = `
             <p><strong>Total Farm Area:</strong> ${totalFarmArea.toFixed(2)} ha</p>
             <p><strong>Encroachment into Protected Areas:</strong> ${areaInProtected.toFixed(2)} ha (${percentProtected}%)</p>
             <p><strong>Encroachment into Forest:</strong> ${areaInForest.toFixed(2)} ha (${percentForest}%)</p>
         `;
-        
         const ctx = document.getElementById('encroachChart').getContext('2d');
         if (encroachChart) encroachChart.destroy();
         encroachChart = new Chart(ctx, {
@@ -600,10 +583,32 @@
                 plugins: { legend: { position: 'top' }, tooltip: { callbacks: { label: (ctx) => `${ctx.raw.toFixed(2)} ha` } } }
             }
         });
-        
         document.getElementById('encroachmentDialog').style.display = 'block';
         const msg = `⚠️ Farm encroachment: ${areaInProtected.toFixed(2)} ha into protected areas (${percentProtected}%), ${areaInForest.toFixed(2)} ha into forest (${percentForest}%).`;
         showNotification(msg);
+    }
+
+    // ==================== NOTIFICATION (FIXED) ====================
+    function showNotification(msg) {
+        // Always request permission if not already granted/denied
+        if (Notification.permission === 'granted') {
+            new Notification('Lupane Monitor', { body: msg });
+        } else if (Notification.permission !== 'denied') {
+            Notification.requestPermission().then(perm => {
+                if (perm === 'granted') {
+                    new Notification('Lupane Monitor', { body: msg });
+                } else {
+                    // If denied, still show an alert so user knows
+                    console.warn('Notifications blocked');
+                }
+            });
+        } else {
+            // permission already denied – show alert as fallback (optional)
+            console.warn('Notifications blocked by user');
+        }
+        // Increment badge count regardless of permission
+        notificationCount++;
+        document.getElementById('notifBadge').innerText = notificationCount;
     }
 
     // ==================== GRAPHS ====================
@@ -674,7 +679,6 @@
         map = L.map('map').setView([-18.92, 27.55], 10);
         currentBaseLayer = osmLayer;
         currentBaseLayer.addTo(map);
-
         document.querySelector('input[value="map"]').addEventListener('change', () => switchBaseLayer('map'));
         document.querySelector('input[value="satellite"]').addEventListener('change', () => switchBaseLayer('satellite'));
 
@@ -699,25 +703,19 @@
             })
             .catch(() => console.warn("Using fallback boundary"));
 
-        // Load vector layers with data storage
         function loadOtherGeoJSON(name, url, style, popupField='name') {
             fetch(url)
                 .then(r => r.ok ? r.json() : Promise.reject(`HTTP ${r.status}`))
                 .then(data => {
                     if (activeLayers[name]) map.removeLayer(activeLayers[name]);
-                    const layer = L.geoJSON(data, {
-                        style: style,
-                        onEachFeature: (f, l) => {
-                            if (f.properties) l.bindPopup(f.properties[popupField] || name);
-                        }
-                    });
+                    const layer = L.geoJSON(data, { style: style, onEachFeature: (f,l) => { if (f.properties) l.bindPopup(f.properties[popupField] || name); } });
                     layer._geojsonData = data;
                     activeLayers[name] = layer;
                     layer.addTo(map);
-                    console.log(`✅ ${name} loaded from ${url}`);
+                    console.log(`✅ ${name} loaded`);
                     updateLegend();
                 })
-                .catch(err => console.error(`❌ Could not load ${name} from ${url}:`, err));
+                .catch(err => console.error(`❌ Could not load ${name}:`, err));
         }
 
         loadOtherGeoJSON('nationalParks', 'NATIONAL PARKS.geojson', { color: '#ff6600', weight: 2, fillOpacity: 0.3 });
@@ -727,7 +725,7 @@
         loadOtherGeoJSON('roads', 'ROADS.geojson', { color: '#DB1E2A', weight: 2, dashArray: '4,12', lineCap: 'round' });
         loadOtherGeoJSON('dams', 'DAM.geojson', { color: '#232323', weight: 1, fillColor: '#0000FF', fillOpacity: 0.8 }, 'DAM_NAME');
 
-        // LULC PNG dropdown
+        // LULC PNG
         document.getElementById('lulcDropdown').onchange = (e) => {
             const val = e.target.value;
             if (val === '2010') loadLulcPng('2010', 'LAND USE LAND COVER 2010.png');
@@ -737,7 +735,7 @@
             else { if (currentLulcLayer) map.removeLayer(currentLulcLayer); currentLulcLayer = null; updateLegend(); }
         };
 
-        // Farm boundaries dropdown (store data)
+        // Farm boundaries dropdown
         const farmDropdown = document.getElementById('farmDropdown');
         farmDropdown.onchange = () => {
             const year = farmDropdown.value;
@@ -767,7 +765,7 @@
             }
         };
 
-        // Forest layers dropdown (store data, using new forest style)
+        // Forest layers dropdown
         const forestDropdown = document.getElementById('forestDropdown');
         forestDropdown.onchange = () => {
             const year = forestDropdown.value;
@@ -797,7 +795,6 @@
             }
         };
 
-        // Toggle for other layers
         function toggleLayer(name) {
             if (!activeLayers[name]) { alert(`Layer ${name} not loaded`); return; }
             if (map.hasLayer(activeLayers[name])) map.removeLayer(activeLayers[name]);
@@ -812,13 +809,11 @@
         document.getElementById('roadsBtn').onclick = () => toggleLayer('roads');
         document.getElementById('damsBtn').onclick = () => toggleLayer('dams');
 
-        // Encroachment button
         document.getElementById('encroachBtn').onclick = calculateEncroachmentIntegrated;
         document.getElementById('closeEncroachDialog').onclick = () => {
             document.getElementById('encroachmentDialog').style.display = 'none';
         };
 
-        // Legend update – forest now shows a tree icon (🌳) instead of a colour box
         function updateLegend() {
             const legendDiv = document.getElementById('legendPanel');
             let content = '';
@@ -849,7 +844,6 @@
             else legendDiv.style.display = 'none';
         }
 
-        // Map click legend popup
         map.on('click', function(e) {
             if (currentLulcLayer && map.hasLayer(currentLulcLayer)) {
                 const legendContent = document.getElementById('legendPanel').innerHTML;
@@ -943,22 +937,7 @@
             if (!reportPanel.style.left) { reportPanel.style.right = '20px'; reportPanel.style.bottom = '80px'; reportPanel.style.left = 'auto'; reportPanel.style.top = 'auto'; }
         };
         closeReport.onclick = () => reportPanel.style.display = 'none';
-        
-        function showNotification(msg) {
-            // Request permission if not granted
-            if (Notification.permission === 'granted') {
-                new Notification('Lupane Monitor', { body: msg });
-            } else if (Notification.permission !== 'denied') {
-                Notification.requestPermission().then(perm => {
-                    if (perm === 'granted') new Notification('Lupane Monitor', { body: msg });
-                });
-            } else {
-                alert(msg);
-            }
-            notificationCount++;
-            document.getElementById('notifBadge').innerText = notificationCount;
-        }
-        
+
         document.getElementById('notifyIcon').onclick = () => { notificationCount = 0; document.getElementById('notifBadge').innerText = '0'; };
         document.getElementById('menuIcon').onclick = () => { const panel = document.getElementById('layerControl'); panel.style.display = panel.style.display === 'none' ? 'block' : 'none'; };
         document.getElementById('graphsIcon').onclick = () => { const panel = document.getElementById('graphsPanel'); panel.style.display = panel.style.display === 'none' ? 'block' : 'none'; if (panel.style.display === 'block') loadAndRenderGraphs(); };
