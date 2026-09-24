@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Lupane Land Use & Wildlife Monitor</title>
+    <title>Lupane Officer Dashboard · Land Use & Wildlife Monitor</title>
+    <!-- Leaflet & plugins -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
@@ -14,62 +15,53 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', sans-serif; overflow: hidden; }
+        body { font-family: 'Segoe UI', sans-serif; overflow: hidden; background: #1e2b2c; }
+
+        /* LOGIN MODAL (same as original but subtle) */
         .login-modal {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0; width: 100%; height: 100%;
             z-index: 10000;
             display: flex;
             justify-content: center;
             align-items: center;
-            background-image: url('background.jpg');
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
+            background: #0b1a1a;
+            background-image: linear-gradient(145deg, #1b3b3b 0%, #0a1f1f 100%);
         }
         .login-box {
-            background: rgba(0,0,0,0.65);
+            background: rgba(0,0,0,0.7);
             width: 450px;
             padding: 35px;
             border-radius: 25px;
             text-align: center;
-            backdrop-filter: blur(4px);
+            backdrop-filter: blur(6px);
             border: 2px solid #ffd700;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
         }
-        .login-box h2 { color: #ffd700; margin-bottom: 15px; font-size: 24px; }
-        .welcome-msg { color: #f0f0f0; font-size: 14px; margin-bottom: 20px; }
+        .login-box h2 { color: #ffd700; margin-bottom: 15px; font-size: 24px; letter-spacing: 1px; }
+        .welcome-msg { color: #f0f0f0; font-size: 14px; margin-bottom: 20px; opacity: 0.9; }
         .login-box input {
-            width: 100%;
-            padding: 12px;
-            margin: 12px 0;
-            border: none;
-            border-radius: 40px;
-            background: rgba(255,255,255,0.9);
-            text-align: center;
+            width: 100%; padding: 12px; margin: 12px 0;
+            border: none; border-radius: 40px;
+            background: rgba(255,255,255,0.95);
+            text-align: center; font-size: 16px;
         }
         .login-box button {
-            background: #1a3c2c;
-            color: white;
-            border: none;
-            padding: 12px 30px;
-            border-radius: 40px;
-            cursor: pointer;
-            font-size: 18px;
-            font-weight: bold;
+            background: #1a3c2c; color: white; border: none;
+            padding: 12px 30px; border-radius: 40px; cursor: pointer;
+            font-size: 18px; font-weight: bold; transition: 0.2s;
         }
         .login-box button:hover { background: #2e7d32; }
         .error-msg { color: #ffaaaa; margin-top: 10px; }
 
-        .map-container { display: none; height: 100vh; width: 100%; }
+        /* MAP CONTAINER */
+        .map-container { display: none; height: 100vh; width: 100%; position: relative; }
         #map { height: calc(100vh - 75px); width: 100%; }
 
+        /* HEADER */
         .header {
-            background-image: url('background.jpg');
-            background-size: cover;
-            background-position: center;
+            background: #0f2a2a;
+            background-image: linear-gradient(90deg, #0b1e1e 0%, #1f3d3d 100%);
             position: relative;
             color: white;
             padding: 0 20px;
@@ -78,345 +70,314 @@
             justify-content: space-between;
             height: 75px;
             border-bottom: 4px solid #8b5a2b;
+            z-index: 500;
         }
-        .header::before {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.6);
-            z-index: 0;
-        }
-        .header .map-title, .header .icon-group, .header .basemap-switcher, .header > div {
-            position: relative;
-            z-index: 1;
-        }
-        .map-title { font-size: 1.4rem; font-weight: bold; text-shadow: 1px 1px 2px #000; color: white; }
+        .header .map-title { font-size: 1.4rem; font-weight: bold; text-shadow: 1px 1px 4px #000; color: #fff3c9; }
         .icon-group { display: flex; gap: 20px; align-items: center; }
         .icon-btn {
-            background: none;
-            border: none;
-            color: white;
-            font-size: 26px;
-            cursor: pointer;
-            position: relative;
+            background: none; border: none; color: #f0f0f0;
+            font-size: 24px; cursor: pointer; position: relative;
+            transition: 0.2s;
         }
+        .icon-btn:hover { color: #ffd966; transform: scale(1.1); }
         .basemap-switcher {
-            background: rgba(0,0,0,0.6);
-            padding: 5px 10px;
-            border-radius: 30px;
-            font-size: 14px;
-            display: flex;
-            gap: 15px;
+            background: rgba(0,0,0,0.5);
+            padding: 5px 14px; border-radius: 30px;
+            font-size: 14px; display: flex; gap: 15px;
+            border: 1px solid #5a8b7a;
         }
         .basemap-switcher label { cursor: pointer; display: flex; align-items: center; gap: 5px; }
-        .basemap-switcher input { cursor: pointer; }
-        .icon-btn:hover, .layer-control button:hover, .layer-control select:hover, .report-panel button:hover, #encroachBtn:hover {
-            animation: bigBlink 0.8s infinite;
-        }
-        @keyframes bigBlink {
-            0% { text-shadow: 0 0 0 #4caf50; box-shadow: 0 0 0 #4caf50; }
-            50% { text-shadow: 0 0 12px #4caf50, 0 0 20px #2e7d32; box-shadow: 0 0 15px #4caf50; }
-            100% { text-shadow: 0 0 0 #4caf50; box-shadow: 0 0 0 #4caf50; }
-        }
         .lang-select {
-            background: #2c3e50;
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 20px;
-            cursor: pointer;
+            background: #2c3e50; color: white; border: none;
+            padding: 6px 12px; border-radius: 20px; cursor: pointer;
+        }
+        .notification-badge {
+            position: absolute; top: -8px; right: -12px;
+            background: #e63946; color: white; border-radius: 50%;
+            padding: 2px 6px; font-size: 10px; font-weight: bold;
         }
 
-        .layer-control {
-            position: absolute;
-            top: 90px;
-            right: 20px;
-            background: rgba(200,200,200,0.8);
-            backdrop-filter: blur(4px);
-            padding: 12px;
-            border-radius: 10px;
-            z-index: 1000;
-            min-width: 240px;
-            border: 2px solid #4caf50;
-            animation: blinkBorder 1.5s infinite;
-            max-height: 70vh;
-            overflow-y: auto;
-        }
-        @keyframes blinkBorder {
-            0% { border-color: #4caf50; box-shadow: 0 0 0 #4caf50; }
-            50% { border-color: #a5d6a7; box-shadow: 0 0 12px #4caf50; }
-            100% { border-color: #4caf50; box-shadow: 0 0 0 #4caf50; }
-        }
-        .layer-control select, .layer-control button {
-            display: block;
-            width: 100%;
-            margin: 6px 0;
-            padding: 8px;
-            background: #2c3e50;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 12px;
-        }
-        .layer-control select:hover, .layer-control button:hover { background: #1abc9c; }
-        .layer-control hr { margin: 10px 0; border-color: #aaa; }
-
-        .legend {
+        /* OFFICER DASHBOARD PANEL — RESPONSIVE */
+        .officer-panel {
             position: absolute;
             bottom: 20px;
             left: 20px;
-            background: rgba(0,0,0,0.8);
-            color: white;
-            padding: 10px;
-            border-radius: 8px;
-            font-size: 12px;
-            backdrop-filter: blur(4px);
-            max-width: 280px;
-            z-index: 1000;
-            display: none;
-        }
-        .legend span { display: inline-block; width: 18px; height: 18px; margin-right: 8px; border-radius: 3px; }
-
-        .report-panel {
-            position: absolute;
-            bottom: 80px;
-            right: 20px;
-            background: rgba(100,100,100,0.9);
-            backdrop-filter: blur(8px);
-            padding: 15px;
-            border-radius: 12px;
-            width: 340px;
-            z-index: 1001;
-            color: white;
-            font-size: 13px;
-            border: 1px solid #ccc;
-            display: none;
-            cursor: move;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        }
-        .report-panel .panel-header {
-            cursor: move;
-            background: rgba(0,0,0,0.5);
-            margin: -15px -15px 10px -15px;
-            padding: 10px 15px;
-            border-radius: 12px 12px 0 0;
-            font-weight: bold;
-        }
-        .report-panel input, .report-panel select, .report-panel textarea {
-            width: 100%;
-            margin: 6px 0;
-            padding: 6px;
-            border-radius: 5px;
-            border: none;
-        }
-        .report-panel button {
-            background: #d32f2f;
-            color: white;
-            border: none;
-            padding: 8px;
-            border-radius: 5px;
-            cursor: pointer;
-            width: 100%;
-            margin-top: 5px;
-        }
-        .report-panel button:hover { background: #b71c1c; }
-        .report-panel .close-btn { background: #555; margin-top: 10px; }
-        .coord-row { display: flex; justify-content: space-between; gap: 8px; margin: 6px 0; }
-        .coord-row button { flex: 1; margin-top: 0; background: #2c3e50; }
-        .coord-row button:hover { background: #1abc9c; }
-
-        .graphs-panel {
-            position: absolute;
-            top: 90px;
-            left: 20px;
-            background: rgba(30,30,30,0.95);
-            backdrop-filter: blur(8px);
-            border-radius: 12px;
-            width: 400px;
-            max-height: 70vh;
-            overflow-y: auto;
-            z-index: 1000;
-            color: white;
-            padding: 12px;
-            border: 1px solid #4caf50;
-            display: none;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-        }
-        .graphs-panel h3 { margin: 0 0 10px 0; font-size: 18px; text-align: center; }
-        .graph-container { margin-bottom: 25px; background: rgba(0,0,0,0.6); padding: 10px; border-radius: 8px; }
-        .graph-container canvas { max-height: 200px; width: 100%; }
-        .close-graphs { float: right; background: none; border: none; color: white; font-size: 20px; cursor: pointer; }
-        .notification-badge {
-            position: absolute;
-            top: -8px;
-            right: -12px;
-            background: red;
-            color: white;
-            border-radius: 50%;
-            padding: 2px 6px;
-            font-size: 10px;
-            font-weight: bold;
-        }
-        .encroachment-dialog {
-            position: absolute;
-            top: 100px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 400px;
-            background: rgba(0,0,0,0.9);
-            backdrop-filter: blur(8px);
-            border-radius: 12px;
+            width: 420px;
+            max-height: 75vh;
+            background: rgba(18, 30, 30, 0.92);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            border: 1px solid #52b788;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.7);
+            z-index: 2000;
             color: white;
             padding: 0;
-            z-index: 2000;
-            display: none;
-            border: 2px solid #ff6600;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
         }
-        .encroachment-dialog .dialog-header {
-            cursor: move;
-            background: rgba(0,0,0,0.6);
-            padding: 10px 15px;
-            border-radius: 10px 10px 0 0;
+        .panel-header {
+            background: #1b3b3b;
+            padding: 12px 18px;
             font-weight: bold;
-            border-bottom: 1px solid #ff6600;
+            font-size: 18px;
+            border-bottom: 2px solid #52b788;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            letter-spacing: 0.5px;
         }
-        .encroachment-dialog .dialog-header button {
-            background: #d32f2f;
-            border: none;
+        .panel-header i { color: #ffd966; margin-right: 8px; }
+        .panel-header .badge {
+            background: #e63946;
+            padding: 2px 10px;
+            border-radius: 30px;
+            font-size: 12px;
             color: white;
-            padding: 5px 10px;
-            border-radius: 5px;
-            cursor: pointer;
+        }
+        .panel-body {
+            padding: 15px 18px;
+            overflow-y: auto;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+        .section-title {
             font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #95d5b2;
+            border-bottom: 1px solid #2d6a4f;
+            padding-bottom: 6px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
         }
-        .encroachment-dialog .dialog-content {
-            padding: 15px;
+        .report-list, .encroach-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 220px;
+            overflow-y: auto;
+            padding-right: 4px;
         }
-        .encroachment-dialog canvas { max-height: 200px; margin-top: 10px; }
-        @media (max-width: 700px) {
-            .layer-control { min-width: 200px; right: 10px; top: 75px; }
-            .report-panel { width: 280px; right: 10px; bottom: 10px; }
-            .graphs-panel { width: 300px; left: 10px; top: 75px; }
+        .report-item, .encroach-item {
+            background: rgba(45, 70, 70, 0.8);
+            border-left: 5px solid #e63946;
+            padding: 10px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            transition: 0.15s;
+            border: 1px solid #2d6a4f;
+        }
+        .report-item:hover, .encroach-item:hover { background: #2d5a5a; }
+        .report-item .info, .encroach-item .info { flex: 1; min-width: 180px; }
+        .report-item .desc { font-weight: 600; color: #f8f9fa; }
+        .report-item .meta { font-size: 11px; color: #b7e4c7; margin-top: 4px; }
+        .report-item .rating { font-size: 11px; padding: 2px 8px; border-radius: 20px; background: #3a5a5a; }
+        .report-item button, .encroach-item button {
+            background: #40916c; border: none; color: white;
+            padding: 6px 12px; border-radius: 20px; cursor: pointer;
+            font-size: 11px; font-weight: bold; transition: 0.2s;
+            margin-left: 8px; white-space: nowrap;
+        }
+        .report-item button:hover, .encroach-item button:hover { background: #52b788; }
+        .encroach-item { border-left-color: #f9a825; }
+        .encroach-item .encroach-stat { font-size: 13px; color: #ffe082; }
+
+        /* LAYER CONTROL & OTHER PANELS (simplified) */
+        .layer-control {
+            position: absolute; top: 90px; right: 20px;
+            background: rgba(0,0,0,0.75); backdrop-filter: blur(6px);
+            padding: 12px; border-radius: 12px; z-index: 1000;
+            min-width: 240px; border: 1px solid #52b788;
+            max-height: 70vh; overflow-y: auto; color: white;
+        }
+        .layer-control select, .layer-control button {
+            display: block; width: 100%; margin: 6px 0; padding: 8px;
+            background: #1b3b3b; color: white; border: none;
+            border-radius: 6px; cursor: pointer; font-size: 12px;
+        }
+        .layer-control button:hover { background: #40916c; }
+        .legend {
+            position: absolute; bottom: 20px; left: 20px;
+            background: rgba(0,0,0,0.8); color: white;
+            padding: 10px; border-radius: 8px; font-size: 12px;
+            backdrop-filter: blur(4px); max-width: 280px;
+            z-index: 1000; display: none;
+        }
+        .graphs-panel {
+            position: absolute; top: 90px; left: 20px;
+            background: rgba(20, 30, 30, 0.95); backdrop-filter: blur(8px);
+            border-radius: 12px; width: 400px; max-height: 70vh;
+            overflow-y: auto; z-index: 1000; color: white;
+            padding: 12px; border: 1px solid #52b788;
+            display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+        .encroachment-dialog {
+            position: absolute; top: 100px; left: 50%;
+            transform: translateX(-50%); width: 400px;
+            background: rgba(0,0,0,0.9); backdrop-filter: blur(8px);
+            border-radius: 12px; color: white; padding: 0;
+            z-index: 2000; display: none; border: 2px solid #ff6600;
+        }
+        .encroachment-dialog .dialog-header {
+            cursor: move; background: rgba(0,0,0,0.6);
+            padding: 10px 15px; border-radius: 10px 10px 0 0;
+            font-weight: bold; border-bottom: 1px solid #ff6600;
+            display: flex; justify-content: space-between;
+        }
+        .encroachment-dialog .dialog-content { padding: 15px; }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #1e2b2c; }
+        ::-webkit-scrollbar-thumb { background: #52b788; border-radius: 10px; }
+
+        @media (max-width: 800px) {
+            .officer-panel { width: 340px; left: 10px; bottom: 10px; max-height: 60vh; }
             .map-title { font-size: 1rem; }
-            .basemap-switcher { font-size: 10px; gap: 8px; padding: 3px 6px; }
-            .encroachment-dialog { width: 300px; top: 80px; }
         }
     </style>
 </head>
 <body>
 
+<!-- LOGIN MODAL -->
 <div id="loginModal" class="login-modal">
     <div class="login-box">
-        <h2>LUPANE LAND USE & WILDLIFE MONITOR</h2>
-        <div class="welcome-msg">Welcome back, please login with your credentials to access the web map.</div>
-        <input type="text" id="username" placeholder="Username" autocomplete="off">
-        <input type="password" id="password" placeholder="Password" autocomplete="off">
-        <button id="loginBtn">Enter Map</button>
+        <h2>🛡️ LUPANE OFFICER DASHBOARD</h2>
+        <div class="welcome-msg">Authorized personnel only. Please log in to view reports & encroachment data.</div>
+        <input type="text" id="username" placeholder="Username" autocomplete="off" value="officer">
+        <input type="password" id="password" placeholder="Password" autocomplete="off" value="lupane2026">
+        <button id="loginBtn">Access Dashboard</button>
         <div id="loginError" class="error-msg"></div>
     </div>
 </div>
 
+<!-- MAP CONTAINER -->
 <div id="mapContainer" class="map-container">
+    <!-- HEADER -->
     <div class="header">
         <div class="icon-group">
             <button class="icon-btn" id="menuIcon"><i class="fas fa-bars"></i></button>
-            <button class="icon-btn" id="reportIcon"><i class="fas fa-edit"></i></button>
             <button class="icon-btn" id="graphsIcon"><i class="fas fa-chart-line"></i></button>
             <button class="icon-btn" id="exportPdfIcon"><i class="fas fa-file-pdf"></i></button>
             <button class="icon-btn" id="notifyIcon"><i class="fas fa-bell"></i><span class="notification-badge" id="notifBadge">0</span></button>
             <select id="languageSelect" class="lang-select">
                 <option value="en">English</option>
-                <option value="ar">العربية</option>
-                <option value="zh">中文</option>
-                <option value="pt">Português</option>
                 <option value="fr">Français</option>
+                <option value="pt">Português</option>
+                <option value="zh">中文</option>
+                <option value="ar">العربية</option>
             </select>
         </div>
-        <div class="map-title" id="mapTitle">LUPANE LAND USE & WILDLIFE MONITOR</div>
+        <div class="map-title" id="mapTitle">LUPANE OFFICER DASHBOARD</div>
         <div class="basemap-switcher">
             <label><input type="radio" name="basemap" value="map" checked> 🗺️ Map</label>
             <label><input type="radio" name="basemap" value="satellite"> 🛰️ Satellite</label>
         </div>
     </div>
+
+    <!-- MAP -->
     <div id="map"></div>
-    <div class="legend" id="legendPanel"></div>
-    <div class="layer-control" id="layerControl">
-        <strong id="layersTitle">LAYERS</strong><hr>
+
+    <!-- OFFICER DASHBOARD PANEL (RESPOND & ENCROACHMENT) -->
+    <div class="officer-panel" id="officerPanel">
+        <div class="panel-header">
+            <span><i class="fas fa-clipboard-list"></i> OFFICER RESPONSE DASHBOARD</span>
+            <span class="badge" id="pendingCount">0 pending</span>
+        </div>
+        <div class="panel-body">
+            <!-- REPORTS SECTION -->
+            <div>
+                <div class="section-title">
+                    <span>📢 HUMAN-WILDLIFE CONFLICT REPORTS</span>
+                    <span style="font-size:11px; color:#b7e4c7;">(click to locate)</span>
+                </div>
+                <div class="report-list" id="reportListContainer">
+                    <!-- populated via JS -->
+                    <div style="color:#95d5b2; font-size:12px; padding:6px;">No reports yet.</div>
+                </div>
+            </div>
+            <!-- ENCROACHMENT SECTION -->
+            <div>
+                <div class="section-title">
+                    <span>🌾 FARM ENCROACHMENT (last calc)</span>
+                    <span style="font-size:11px; color:#b7e4c7;">auto‑updated</span>
+                </div>
+                <div class="encroach-list" id="encroachListContainer">
+                    <div class="encroach-item">
+                        <div class="info">
+                            <div class="encroach-stat">No encroachment calculated yet.</div>
+                            <div style="font-size:11px; color:#b7e4c7;">Use "CHECK FARM ENCROACHMENT" button.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- LAYER CONTROL (simplified, same as original) -->
+    <div class="layer-control" id="layerControl" style="display: none;">
+        <strong>LAYERS</strong><hr>
         <select id="lulcDropdown">
-            <option value="" id="lulcDefaultOption">-- LAND USE LAND COVER --</option>
-            <option value="2010" id="lulc2010Opt">LAND USE LAND COVER 2010</option>
-            <option value="2015" id="lulc2015Opt">LAND USE LAND COVER 2015</option>
-            <option value="2020" id="lulc2020Opt">LAND USE LAND COVER 2020</option>
-            <option value="2026" id="lulc2026Opt">LAND USE LAND COVER 2026</option>
+            <option value="">-- LAND USE LAND COVER --</option>
+            <option value="2010">LULC 2010</option>
+            <option value="2015">LULC 2015</option>
+            <option value="2020">LULC 2020</option>
+            <option value="2026">LULC 2026</option>
         </select>
         <hr>
-        <strong id="farmBoundariesTitle">FARM BOUNDARIES</strong>
+        <strong>FARM BOUNDARIES</strong>
         <select id="farmDropdown">
-            <option value="" id="farmDefaultOption">-- Select Year --</option>
-            <option value="2010" id="farm2010Opt">FARMS 2010</option>
-            <option value="2015" id="farm2015Opt">FARMS 2015</option>
-            <option value="2020" id="farm2020Opt">FARMS 2020</option>
-            <option value="2026" id="farm2026Opt">FARMS 2026</option>
+            <option value="">-- Select Year --</option>
+            <option value="2010">FARMS 2010</option>
+            <option value="2015">FARMS 2015</option>
+            <option value="2020">FARMS 2020</option>
+            <option value="2026">FARMS 2026</option>
         </select>
         <hr>
-        <strong id="forestLayersTitle">FOREST LAYERS</strong>
+        <strong>FOREST LAYERS</strong>
         <select id="forestDropdown">
-            <option value="" id="forestDefaultOption">-- Select Year --</option>
-            <option value="2010" id="forest2010Opt">FOREST 2010</option>
-            <option value="2015" id="forest2015Opt">FOREST 2015</option>
-            <option value="2020" id="forest2020Opt">FOREST 2020</option>
-            <option value="2025" id="forest2025Opt">FOREST 2025</option>
+            <option value="">-- Select Year --</option>
+            <option value="2010">FOREST 2010</option>
+            <option value="2015">FOREST 2015</option>
+            <option value="2020">FOREST 2020</option>
+            <option value="2025">FOREST 2025</option>
         </select>
         <hr>
-        <button id="lupaneDistrictBtn">LUPANE BOUNDARY DISTRICT</button>
+        <button id="lupaneDistrictBtn">LUPANE BOUNDARY</button>
         <button id="nationalParksBtn">NATIONAL PARKS</button>
-        <button id="protectedAreasBtn">PROTECTED AREAS WITHIN LUPANE</button>
+        <button id="protectedAreasBtn">PROTECTED AREAS</button>
         <button id="riversBtn">RIVERS</button>
-        <button id="roadsBtn">ROADS (styled)</button>
+        <button id="roadsBtn">ROADS</button>
         <button id="damsBtn">DAMS</button>
         <hr>
-        <button id="encroachBtn">CHECK FARM ENCROACHMENT</button>
+        <button id="encroachBtn" style="background:#b45309;">CHECK FARM ENCROACHMENT</button>
     </div>
-    <div class="report-panel" id="reportPanel">
-        <div class="panel-header" id="reportHeader">📢 Report Human-Wildlife Conflict</div>
-        <textarea id="reportDesc" rows="2" placeholder="What happened?" id="reportPlaceholder"></textarea>
-        <select id="damageSelect">
-            <option value="" id="damageDefault">-- Select damage level --</option>
-            <option value="low" id="damageLow">Low</option>
-            <option value="moderate" id="damageModerate">Moderate</option>
-            <option value="high" id="damageHigh">High</option>
-            <option value="very high" id="damageVeryHigh">Very High</option>
-        </select>
-        <div class="coord-row">
-            <button id="getLocationBtn">📍 Use My GPS</button>
-            <button id="pickMapBtn">🗺️ Pick on Map</button>
-        </div>
-        <span id="coordsDisplay" style="font-size:10px;">No location selected</span>
-        <button id="submitReportBtn">Submit Report</button>
-        <button id="closeReportBtn" class="close-btn">Close</button>
-    </div>
+
+    <!-- LEGEND & GRAPHS (optional) -->
+    <div class="legend" id="legendPanel"></div>
     <div class="graphs-panel" id="graphsPanel">
-        <button class="close-graphs" id="closeGraphsBtn">&times;</button>
-        <h3 id="graphsTitle">📊 Land Use Change Statistics</h3>
-        <div class="graph-container"><canvas id="farmlandExpansionChart" width="400" height="200"></canvas></div>
-        <div class="graph-container"><canvas id="forestLossChart" width="400" height="200"></canvas></div>
-        <div class="graph-container"><canvas id="waterChangeChart" width="400" height="200"></canvas></div>
-        <div class="graph-container"><canvas id="landUsePieChart" width="400" height="200"></canvas></div>
-        <div class="graph-container"><canvas id="barComparisonChart" width="400" height="200"></canvas></div>
-        <p style="font-size:10px; text-align:center;" id="graphDataCredit">Data source: lulc_stats.csv</p>
+        <button class="close-graphs" id="closeGraphsBtn" style="float:right; background:none; border:none; color:white; font-size:20px;">&times;</button>
+        <h3>📊 Land Use Change</h3>
+        <div class="graph-container"><canvas id="farmlandExpansionChart"></canvas></div>
+        <div class="graph-container"><canvas id="forestLossChart"></canvas></div>
+        <div class="graph-container"><canvas id="waterChangeChart"></canvas></div>
+        <div class="graph-container"><canvas id="landUsePieChart"></canvas></div>
+        <div class="graph-container"><canvas id="barComparisonChart"></canvas></div>
     </div>
+
+    <!-- ENCROACHMENT DIALOG (draggable) -->
     <div id="encroachmentDialog" class="encroachment-dialog">
         <div class="dialog-header">
-            <span id="encroachTitle">🌾 Farm Encroachment Report</span>
-            <button id="closeEncroachDialog">✖</button>
+            <span>🌾 Farm Encroachment Report</span>
+            <button id="closeEncroachDialog" style="background:#d32f2f; border:none; color:white; border-radius:4px; padding:2px 8px;">✖</button>
         </div>
         <div class="dialog-content">
             <div id="encroachmentStats"></div>
@@ -431,7 +392,8 @@
     const mapContainer = document.getElementById('mapContainer');
     const loginBtn = document.getElementById('loginBtn');
     const loginError = document.getElementById('loginError');
-    const correctUser = 'web gis', correctPass = '@2026';
+    // demo credentials: officer / lupane2026
+    const correctUser = 'officer', correctPass = 'lupane2026';
 
     loginBtn.onclick = () => {
         const u = document.getElementById('username').value.trim();
@@ -440,7 +402,7 @@
             loginModal.style.display = 'none';
             mapContainer.style.display = 'block';
             initMap();
-        } else loginError.innerText = 'Invalid username or password.';
+        } else loginError.innerText = 'Invalid credentials. Use officer / lupane2026';
     };
     document.addEventListener('keypress', e => { if(e.key==='Enter' && loginModal.style.display!=='none') loginBtn.click(); });
 
@@ -454,389 +416,15 @@
     let currentLulcLayer = null;
     let encroachChart = null;
     let currentLanguage = 'en';
+    let conflictReports = [];          // store reports: { lat, lng, desc, rating, timestamp, id }
+    let lastEncroachmentData = null;   // { totalFarmArea, areaInProtected, areaInForest, percentProtected, percentForest }
 
-    // ==================== TRANSLATIONS ====================
+    // ==================== TRANSLATIONS (partial, keep minimal) ====================
     const translations = {
-        en: {
-            mapTitle: "LUPANE LAND USE & WILDLIFE MONITOR",
-            layersTitle: "LAYERS",
-            lulcDefault: "-- LAND USE LAND COVER --",
-            lulc2010: "LAND USE LAND COVER 2010",
-            lulc2015: "LAND USE LAND COVER 2015",
-            lulc2020: "LAND USE LAND COVER 2020",
-            lulc2026: "LAND USE LAND COVER 2026",
-            farmTitle: "FARM BOUNDARIES",
-            farmDefault: "-- Select Year --",
-            farm2010: "FARMS 2010",
-            farm2015: "FARMS 2015",
-            farm2020: "FARMS 2020",
-            farm2026: "FARMS 2026",
-            forestTitle: "FOREST LAYERS",
-            forestDefault: "-- Select Year --",
-            forest2010: "FOREST 2010",
-            forest2015: "FOREST 2015",
-            forest2020: "FOREST 2020",
-            forest2025: "FOREST 2025",
-            lupaneBtn: "LUPANE BOUNDARY DISTRICT",
-            nationalParksBtn: "NATIONAL PARKS",
-            protectedAreasBtn: "PROTECTED AREAS WITHIN LUPANE",
-            riversBtn: "RIVERS",
-            roadsBtn: "ROADS (styled)",
-            damsBtn: "DAMS",
-            encroachBtn: "CHECK FARM ENCROACHMENT",
-            reportHeader: "📢 Report Human-Wildlife Conflict",
-            reportDescPlaceholder: "What happened?",
-            damageDefault: "-- Select damage level --",
-            damageLow: "Low",
-            damageModerate: "Moderate",
-            damageHigh: "High",
-            damageVeryHigh: "Very High",
-            getLocationBtn: "📍 Use My GPS",
-            pickMapBtn: "🗺️ Pick on Map",
-            submitReport: "Submit Report",
-            closeReport: "Close",
-            graphsTitle: "📊 Land Use Change Statistics",
-            graphDataCredit: "Data source: lulc_stats.csv",
-            encroachTitle: "🌾 Farm Encroachment Report",
-            legendLULC: "LAND COVER (PNG overlay)",
-            legendWater: "Water",
-            legendCrop: "Crop Fields",
-            legendBuiltup: "Built up Area",
-            legendRocky: "Rocky Area",
-            legendBare: "Bare Land",
-            legendForest: "Forest",
-            legendRoads: "Roads",
-            legendFarm: "FARM BOUNDARIES",
-            legendFarmDesc: "Yellow with brown edge",
-            legendForestLayer: "FOREST LAYER",
-            legendForestDesc: "Forest (solid green)",
-            legendLupane: "LUPANE BOUNDARY",
-            legendLupaneDesc: "Boundary",
-            legendNationalParks: "NATIONAL PARKS",
-            legendNationalParksDesc: "Park area",
-            legendProtectedAreas: "PROTECTED AREAS",
-            legendProtectedAreasDesc: "Protected zone",
-            legendRivers: "RIVERS",
-            legendRiversDesc: "River lines",
-            legendRoadsDesc: "Roads (dashed)",
-            legendDams: "DAMS",
-            legendDamsDesc: "Dam / Reservoir"
-        },
-        ar: {
-            mapTitle: "مراقبة استخدام الأراضي والحياة البرية في لوباني",
-            layersTitle: "الطبقات",
-            lulcDefault: "-- غطاء الأرض --",
-            lulc2010: "غطاء الأرض 2010",
-            lulc2015: "غطاء الأرض 2015",
-            lulc2020: "غطاء الأرض 2020",
-            lulc2026: "غطاء الأرض 2026",
-            farmTitle: "حدود المزارع",
-            farmDefault: "-- اختر السنة --",
-            farm2010: "مزارع 2010",
-            farm2015: "مزارع 2015",
-            farm2020: "مزارع 2020",
-            farm2026: "مزارع 2026",
-            forestTitle: "طبقات الغابات",
-            forestDefault: "-- اختر السنة --",
-            forest2010: "غابات 2010",
-            forest2015: "غابات 2015",
-            forest2020: "غابات 2020",
-            forest2025: "غابات 2025",
-            lupaneBtn: "منطقة لوباني",
-            nationalParksBtn: "الحدائق الوطنية",
-            protectedAreasBtn: "المناطق المحمية داخل لوباني",
-            riversBtn: "الأنهار",
-            roadsBtn: "الطرق (مُنسَّقة)",
-            damsBtn: "السدود",
-            encroachBtn: "التحقق من التعدي الزراعي",
-            reportHeader: "📢 الإبلاغ عن نزاع الإنسان والحياة البرية",
-            reportDescPlaceholder: "ماذا حدث؟",
-            damageDefault: "-- اختر مستوى الضرر --",
-            damageLow: "منخفض",
-            damageModerate: "متوسط",
-            damageHigh: "مرتفع",
-            damageVeryHigh: "مرتفع جداً",
-            getLocationBtn: "📍 استخدام GPS الخاص بي",
-            pickMapBtn: "🗺️ اختر على الخريطة",
-            submitReport: "إرسال التقرير",
-            closeReport: "إغلاق",
-            graphsTitle: "📊 إحصائيات تغير استخدام الأراضي",
-            graphDataCredit: "مصدر البيانات: lulc_stats.csv",
-            encroachTitle: "🌾 تقرير التعدي الزراعي",
-            legendLULC: "غطاء الأرض (صورة PNG)",
-            legendWater: "المياه",
-            legendCrop: "الأراضي الزراعية",
-            legendBuiltup: "المناطق الحضرية",
-            legendRocky: "مناطق صخرية",
-            legendBare: "الأراضي الجرداء",
-            legendForest: "الغابات",
-            legendRoads: "الطرق",
-            legendFarm: "حدود المزارع",
-            legendFarmDesc: "أصفر بحافة بنية",
-            legendForestLayer: "طبقة الغابات",
-            legendForestDesc: "غابات (أخضر صلب)",
-            legendLupane: "حدود لوباني",
-            legendLupaneDesc: "الحدود",
-            legendNationalParks: "الحدائق الوطنية",
-            legendNationalParksDesc: "منطقة الحديقة",
-            legendProtectedAreas: "المناطق المحمية",
-            legendProtectedAreasDesc: "منطقة محمية",
-            legendRivers: "الأنهار",
-            legendRiversDesc: "خطوط الأنهار",
-            legendRoadsDesc: "الطرق (متقطعة)",
-            legendDams: "السدود",
-            legendDamsDesc: "سد / خزان"
-        },
-        zh: {
-            mapTitle: "卢帕内土地利用与野生动物监测",
-            layersTitle: "图层",
-            lulcDefault: "-- 土地利用/土地覆盖 --",
-            lulc2010: "土地利用/土地覆盖 2010",
-            lulc2015: "土地利用/土地覆盖 2015",
-            lulc2020: "土地利用/土地覆盖 2020",
-            lulc2026: "土地利用/土地覆盖 2026",
-            farmTitle: "农田边界",
-            farmDefault: "-- 选择年份 --",
-            farm2010: "农田 2010",
-            farm2015: "农田 2015",
-            farm2020: "农田 2020",
-            farm2026: "农田 2026",
-            forestTitle: "森林图层",
-            forestDefault: "-- 选择年份 --",
-            forest2010: "森林 2010",
-            forest2015: "森林 2015",
-            forest2020: "森林 2020",
-            forest2025: "森林 2025",
-            lupaneBtn: "卢帕内区",
-            nationalParksBtn: "国家公园",
-            protectedAreasBtn: "卢帕内保护区",
-            riversBtn: "河流",
-            roadsBtn: "道路（样式）",
-            damsBtn: "水坝",
-            encroachBtn: "检查农田侵占",
-            reportHeader: "📢 报告人类与野生动物冲突",
-            reportDescPlaceholder: "发生了什么？",
-            damageDefault: "-- 选择损害等级 --",
-            damageLow: "低",
-            damageModerate: "中等",
-            damageHigh: "高",
-            damageVeryHigh: "非常高",
-            getLocationBtn: "📍 使用我的GPS",
-            pickMapBtn: "🗺️ 在地图上选择",
-            submitReport: "提交报告",
-            closeReport: "关闭",
-            graphsTitle: "📊 土地利用变化统计",
-            graphDataCredit: "数据来源: lulc_stats.csv",
-            encroachTitle: "🌾 农田侵占报告",
-            legendLULC: "土地覆盖（PNG叠加）",
-            legendWater: "水域",
-            legendCrop: "农田",
-            legendBuiltup: "建成区",
-            legendRocky: "岩石区",
-            legendBare: "裸地",
-            legendForest: "森林",
-            legendRoads: "道路",
-            legendFarm: "农田边界",
-            legendFarmDesc: "黄色带棕色边缘",
-            legendForestLayer: "森林图层",
-            legendForestDesc: "森林（纯绿色）",
-            legendLupane: "卢帕内边界",
-            legendLupaneDesc: "边界",
-            legendNationalParks: "国家公园",
-            legendNationalParksDesc: "公园区域",
-            legendProtectedAreas: "保护区",
-            legendProtectedAreasDesc: "保护区",
-            legendRivers: "河流",
-            legendRiversDesc: "河流线",
-            legendRoadsDesc: "道路（虚线）",
-            legendDams: "水坝",
-            legendDamsDesc: "水坝/水库"
-        },
-        pt: {
-            mapTitle: "Monitoramento do Uso da Terra e Vida Selvagem em Lupane",
-            layersTitle: "CAMADAS",
-            lulcDefault: "-- USO DA TERRA --",
-            lulc2010: "Uso da Terra 2010",
-            lulc2015: "Uso da Terra 2015",
-            lulc2020: "Uso da Terra 2020",
-            lulc2026: "Uso da Terra 2026",
-            farmTitle: "LIMITES AGRÍCOLAS",
-            farmDefault: "-- Selecionar Ano --",
-            farm2010: "FAZENDAS 2010",
-            farm2015: "FAZENDAS 2015",
-            farm2020: "FAZENDAS 2020",
-            farm2026: "FAZENDAS 2026",
-            forestTitle: "CAMADAS FLORESTAIS",
-            forestDefault: "-- Selecionar Ano --",
-            forest2010: "FLORESTA 2010",
-            forest2015: "FLORESTA 2015",
-            forest2020: "FLORESTA 2020",
-            forest2025: "FLORESTA 2025",
-            lupaneBtn: "DISTRITO DE LUPANE",
-            nationalParksBtn: "PARQUES NACIONAIS",
-            protectedAreasBtn: "ÁREAS PROTEGIDAS EM LUPANE",
-            riversBtn: "RIOS",
-            roadsBtn: "ESTRADAS (estilizadas)",
-            damsBtn: "REPRESAS",
-            encroachBtn: "VERIFICAR INVASÃO AGRÍCOLA",
-            reportHeader: "📢 Relatar Conflito Humano-Fauna",
-            reportDescPlaceholder: "O que aconteceu?",
-            damageDefault: "-- Selecionar nível de dano --",
-            damageLow: "Baixo",
-            damageModerate: "Moderado",
-            damageHigh: "Alto",
-            damageVeryHigh: "Muito Alto",
-            getLocationBtn: "📍 Usar meu GPS",
-            pickMapBtn: "🗺️ Escolher no mapa",
-            submitReport: "Enviar Relatório",
-            closeReport: "Fechar",
-            graphsTitle: "📊 Estatísticas de Mudança do Uso da Terra",
-            graphDataCredit: "Fonte: lulc_stats.csv",
-            encroachTitle: "🌾 Relatório de Invasão Agrícola",
-            legendLULC: "COBERTURA DO SOLO (PNG)",
-            legendWater: "Água",
-            legendCrop: "Campos Agrícolas",
-            legendBuiltup: "Área Construída",
-            legendRocky: "Área Rochosa",
-            legendBare: "Terra Nua",
-            legendForest: "Floresta",
-            legendRoads: "Estradas",
-            legendFarm: "LIMITES AGRÍCOLAS",
-            legendFarmDesc: "Amarelo com borda marrom",
-            legendForestLayer: "CAMADA FLORESTAL",
-            legendForestDesc: "Floresta (verde sólido)",
-            legendLupane: "LIMITE DE LUPANE",
-            legendLupaneDesc: "Limite",
-            legendNationalParks: "PARQUES NACIONAIS",
-            legendNationalParksDesc: "Área do parque",
-            legendProtectedAreas: "ÁREAS PROTEGIDAS",
-            legendProtectedAreasDesc: "Zona protegida",
-            legendRivers: "RIOS",
-            legendRiversDesc: "Linhas de rios",
-            legendRoadsDesc: "Estradas (tracejadas)",
-            legendDams: "REPRESAS",
-            legendDamsDesc: "Represa / Reservatório"
-        },
-        fr: {
-            mapTitle: "Surveillance de l'utilisation des terres et de la faune à Lupane",
-            layersTitle: "COUCHES",
-            lulcDefault: "-- UTILISATION DES TERRES --",
-            lulc2010: "Occupation du sol 2010",
-            lulc2015: "Occupation du sol 2015",
-            lulc2020: "Occupation du sol 2020",
-            lulc2026: "Occupation du sol 2026",
-            farmTitle: "LIMITES AGRICOLES",
-            farmDefault: "-- Sélectionner l'année --",
-            farm2010: "FERMES 2010",
-            farm2015: "FERMES 2015",
-            farm2020: "FERMES 2020",
-            farm2026: "FERMES 2026",
-            forestTitle: "COUCHES FORESTIÈRES",
-            forestDefault: "-- Sélectionner l'année --",
-            forest2010: "FORÊT 2010",
-            forest2015: "FORÊT 2015",
-            forest2020: "FORÊT 2020",
-            forest2025: "FORÊT 2025",
-            lupaneBtn: "DISTRICT DE LUPANE",
-            nationalParksBtn: "PARCS NATIONAUX",
-            protectedAreasBtn: "ZONES PROTÉGÉES DANS LUPANE",
-            riversBtn: "RIVIÈRES",
-            roadsBtn: "ROUTES (stylisées)",
-            damsBtn: "BARRAGES",
-            encroachBtn: "VÉRIFIER L'EMPIÉTEMENT AGRICOLE",
-            reportHeader: "📢 Signaler un conflit homme-faune",
-            reportDescPlaceholder: "Que s'est-il passé ?",
-            damageDefault: "-- Sélectionner le niveau de dégât --",
-            damageLow: "Faible",
-            damageModerate: "Modéré",
-            damageHigh: "Élevé",
-            damageVeryHigh: "Très élevé",
-            getLocationBtn: "📍 Utiliser mon GPS",
-            pickMapBtn: "🗺️ Choisir sur la carte",
-            submitReport: "Soumettre le rapport",
-            closeReport: "Fermer",
-            graphsTitle: "📊 Statistiques de changement d'utilisation des terres",
-            graphDataCredit: "Source: lulc_stats.csv",
-            encroachTitle: "🌾 Rapport d'empiétement agricole",
-            legendLULC: "COUVERTURE DU SOL (PNG)",
-            legendWater: "Eau",
-            legendCrop: "Champs cultivés",
-            legendBuiltup: "Zone bâtie",
-            legendRocky: "Zone rocheuse",
-            legendBare: "Sol nu",
-            legendForest: "Forêt",
-            legendRoads: "Routes",
-            legendFarm: "LIMITES AGRICOLES",
-            legendFarmDesc: "Jaune avec bordure marron",
-            legendForestLayer: "COUCHE FORESTIÈRE",
-            legendForestDesc: "Forêt (vert uni)",
-            legendLupane: "LIMITE DE LUPANE",
-            legendLupaneDesc: "Limite",
-            legendNationalParks: "PARCS NATIONAUX",
-            legendNationalParksDesc: "Zone du parc",
-            legendProtectedAreas: "ZONES PROTÉGÉES",
-            legendProtectedAreasDesc: "Zone protégée",
-            legendRivers: "RIVIÈRES",
-            legendRiversDesc: "Lignes de rivière",
-            legendRoadsDesc: "Routes (tirets)",
-            legendDams: "BARRAGES",
-            legendDamsDesc: "Barrage / Réservoir"
-        }
+        en: { mapTitle: "LUPANE OFFICER DASHBOARD" }
     };
 
-    function updateUILanguage(lang) {
-        const t = translations[lang];
-        if (!t) return;
-        document.getElementById('mapTitle').innerText = t.mapTitle;
-        document.getElementById('layersTitle').innerText = t.layersTitle;
-        document.getElementById('lulcDefaultOption').innerText = t.lulcDefault;
-        document.getElementById('lulc2010Opt').innerText = t.lulc2010;
-        document.getElementById('lulc2015Opt').innerText = t.lulc2015;
-        document.getElementById('lulc2020Opt').innerText = t.lulc2020;
-        document.getElementById('lulc2026Opt').innerText = t.lulc2026;
-        document.getElementById('farmBoundariesTitle').innerText = t.farmTitle;
-        document.getElementById('farmDefaultOption').innerText = t.farmDefault;
-        document.getElementById('farm2010Opt').innerText = t.farm2010;
-        document.getElementById('farm2015Opt').innerText = t.farm2015;
-        document.getElementById('farm2020Opt').innerText = t.farm2020;
-        document.getElementById('farm2026Opt').innerText = t.farm2026;
-        document.getElementById('forestLayersTitle').innerText = t.forestTitle;
-        document.getElementById('forestDefaultOption').innerText = t.forestDefault;
-        document.getElementById('forest2010Opt').innerText = t.forest2010;
-        document.getElementById('forest2015Opt').innerText = t.forest2015;
-        document.getElementById('forest2020Opt').innerText = t.forest2020;
-        document.getElementById('forest2025Opt').innerText = t.forest2025;
-        document.getElementById('lupaneDistrictBtn').innerText = t.lupaneBtn;
-        document.getElementById('nationalParksBtn').innerText = t.nationalParksBtn;
-        document.getElementById('protectedAreasBtn').innerText = t.protectedAreasBtn;
-        document.getElementById('riversBtn').innerText = t.riversBtn;
-        document.getElementById('roadsBtn').innerText = t.roadsBtn;
-        document.getElementById('damsBtn').innerText = t.damsBtn;
-        document.getElementById('encroachBtn').innerText = t.encroachBtn;
-        document.getElementById('reportHeader').innerText = t.reportHeader;
-        document.getElementById('reportDesc').placeholder = t.reportDescPlaceholder;
-        document.getElementById('damageDefault').innerText = t.damageDefault;
-        document.getElementById('damageLow').innerText = t.damageLow;
-        document.getElementById('damageModerate').innerText = t.damageModerate;
-        document.getElementById('damageHigh').innerText = t.damageHigh;
-        document.getElementById('damageVeryHigh').innerText = t.damageVeryHigh;
-        document.getElementById('getLocationBtn').innerText = t.getLocationBtn;
-        document.getElementById('pickMapBtn').innerText = t.pickMapBtn;
-        document.getElementById('submitReportBtn').innerText = t.submitReport;
-        document.getElementById('closeReportBtn').innerText = t.closeReport;
-        document.getElementById('graphsTitle').innerText = t.graphsTitle;
-        document.getElementById('graphDataCredit').innerText = t.graphDataCredit;
-        document.getElementById('encroachTitle').innerText = t.encroachTitle;
-        // Legend is dynamic – we rebuild it in updateLegend based on visible layers and translations.
-        // We'll also update the graph titles (already set via Chart.js, but we'll reload charts if needed)
-        // For graph texts, the charts themselves contain labels – we can destroy and recreate them,
-        // but to keep it simple, we'll just update the canvas titles via chart options? Not necessary.
-        // We'll just call a function to redraw the graphs (they already read from CSV, not language dependent except the text above).
-        // The legend will be updated via updateLegend() call after language change.
-        if (typeof updateLegend === 'function') updateLegend();
-    }
-
-    // Basemaps
+    // ==================== BASEMAPS ====================
     const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' });
     const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles &copy; Esri' });
 
@@ -846,57 +434,17 @@
         currentBaseLayer.addTo(map);
     }
 
-    // LULC PNG bounds
+    // LULC bounds & styles
     const lupaneBounds = [[-19.5664, 27.0994], [-18.1749, 28.6704]];
 
     function loadLulcPng(year, pngUrl) {
         if (currentLulcLayer) map.removeLayer(currentLulcLayer);
-        currentLulcLayer = L.imageOverlay(pngUrl, lupaneBounds, {
-            opacity: 0.85,
-            interactive: true,
-            attribution: `Land Use/Land Cover ${year}`
-        }).addTo(map);
+        currentLulcLayer = L.imageOverlay(pngUrl, lupaneBounds, { opacity: 0.85, interactive: true }).addTo(map);
         updateLegend();
     }
 
-    // Forest style
-    const forestStyle = {
-        color: '#4DAF4A',
-        weight: 2,
-        fillColor: '#4DAF4A',
-        fillOpacity: 0.8,
-        opacity: 0.9
-    };
-    const farmStyle = {
-        color: '#8B4513',
-        weight: 2.5,
-        fillColor: '#fff633',
-        fillOpacity: 0.6,
-        opacity: 0.8
-    };
-
-    function loadGeoJSONLayer(name, url, style, popupField = 'Name') {
-        fetch(url)
-            .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
-            .then(data => {
-                if (activeLayers[name]) map.removeLayer(activeLayers[name]);
-                const layer = L.geoJSON(data, {
-                    style: style,
-                    onEachFeature: (f, l) => {
-                        let props = f.properties;
-                        let popupContent = `<b>${name}</b><br>`;
-                        if (props.Name) popupContent += `Name: ${props.Name}<br>`;
-                        if (props.AREA) popupContent += `Area: ${props.AREA} ha<br>`;
-                        l.bindPopup(popupContent);
-                    }
-                });
-                layer._geojsonData = data;
-                activeLayers[name] = layer;
-                layer.addTo(map);
-                updateLegend();
-            })
-            .catch(err => console.warn(`Could not load ${url}:`, err));
-    }
+    const forestStyle = { color: '#4DAF4A', weight: 2, fillColor: '#4DAF4A', fillOpacity: 0.8 };
+    const farmStyle = { color: '#8B4513', weight: 2.5, fillColor: '#fff633', fillOpacity: 0.6 };
 
     function removeLayerIfExists(name) {
         if (activeLayers[name] && map.hasLayer(activeLayers[name])) {
@@ -905,31 +453,107 @@
         }
     }
 
-    // Encroachment
+    // ==================== OFFICER DASHBOARD REFRESH ====================
+    function refreshOfficerDashboard() {
+        // Update pending count
+        document.getElementById('pendingCount').innerText = conflictReports.length + ' pending';
+
+        // Populate report list
+        const reportContainer = document.getElementById('reportListContainer');
+        if (conflictReports.length === 0) {
+            reportContainer.innerHTML = '<div style="color:#95d5b2; font-size:12px; padding:6px;">No reports yet.</div>';
+        } else {
+            reportContainer.innerHTML = conflictReports.map((r, idx) => {
+                const date = r.timestamp ? new Date(r.timestamp).toLocaleTimeString() : '';
+                return `<div class="report-item" data-idx="${idx}">
+                    <div class="info">
+                        <div class="desc">${r.desc || 'No description'}</div>
+                        <div class="meta">📍 ${r.lat.toFixed(4)}, ${r.lng.toFixed(4)} · ${r.rating || 'unrated'} · ${date}</div>
+                    </div>
+                    <button class="locate-btn" data-lat="${r.lat}" data-lng="${r.lng}"><i class="fas fa-map-pin"></i> Locate</button>
+                </div>`;
+            }).join('');
+            // Attach locate handlers
+            document.querySelectorAll('.report-item .locate-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const lat = parseFloat(btn.dataset.lat);
+                    const lng = parseFloat(btn.dataset.lng);
+                    map.setView([lat, lng], 14);
+                    // open popup if exists
+                    conflictMarkers.forEach(m => { if (Math.abs(m.getLatLng().lat - lat) < 0.001 && Math.abs(m.getLatLng().lng - lng) < 0.001) m.openPopup(); });
+                });
+            });
+        }
+
+        // Update encroachment section if data exists
+        const encroachContainer = document.getElementById('encroachListContainer');
+        if (lastEncroachmentData) {
+            const d = lastEncroachmentData;
+            encroachContainer.innerHTML = `
+                <div class="encroach-item">
+                    <div class="info">
+                        <div class="encroach-stat">🌿 Protected: ${d.areaInProtected.toFixed(2)} ha (${d.percentProtected}%)</div>
+                        <div class="encroach-stat">🌳 Forest: ${d.areaInForest.toFixed(2)} ha (${d.percentForest}%)</div>
+                        <div style="font-size:11px; color:#b7e4c7;">Total farm area: ${d.totalFarmArea.toFixed(2)} ha</div>
+                    </div>
+                    <button class="view-encroach-btn"><i class="fas fa-chart-bar"></i> Details</button>
+                </div>`;
+            document.querySelector('.view-encroach-btn')?.addEventListener('click', () => {
+                if (lastEncroachmentData) {
+                    document.getElementById('encroachmentDialog').style.display = 'block';
+                }
+            });
+        } else {
+            encroachContainer.innerHTML = `<div class="encroach-item"><div class="info"><div class="encroach-stat">No encroachment calculated yet.</div><div style="font-size:11px; color:#b7e4c7;">Use "CHECK FARM ENCROACHMENT" button.</div></div></div>`;
+        }
+    }
+
+    // ==================== REPORT SUBMISSION (from map popup or external) ====================
+    function addConflictReport(lat, lng, desc, rating) {
+        const report = {
+            lat, lng, desc, rating,
+            timestamp: new Date().toISOString(),
+            id: Date.now() + Math.random()
+        };
+        conflictReports.push(report);
+
+        // heatmap update
+        let intensity = rating==='low'?0.3 : rating==='moderate'?0.6 : rating==='high'?0.8 : 1.0;
+        if (!heatLayer) {
+            heatLayer = L.heatLayer([[lat, lng, intensity]], { radius: 25, blur: 15 }).addTo(map);
+        } else {
+            heatLayer.addLatLng([lat, lng, intensity]);
+        }
+        // add marker
+        const marker = L.marker([lat, lng]).addTo(map)
+            .bindPopup(`<b>Conflict Report</b><br>${desc}<br>Rating: ${rating}`);
+        conflictMarkers.push(marker);
+
+        showNotification(`New conflict report: ${desc} (${rating})`);
+        refreshOfficerDashboard();
+    }
+
+    function showNotification(msg) {
+        if (Notification.permission === 'granted') new Notification('Lupane Monitor', { body: msg });
+        else if (Notification.permission !== 'denied') Notification.requestPermission().then(perm => { if (perm === 'granted') new Notification('Lupane Monitor', { body: msg }); });
+        notificationCount++;
+        document.getElementById('notifBadge').innerText = notificationCount;
+    }
+
+    // ==================== ENCROACHMENT CALCULATION ====================
     async function calculateEncroachmentIntegrated() {
         const farmYear = document.getElementById('farmDropdown').value;
         const forestYear = document.getElementById('forestDropdown').value;
-        if (!farmYear) {
-            alert('Please select a farm year from the dropdown first.');
-            return;
-        }
+        if (!farmYear) { alert('Please select a farm year from the dropdown first.'); return; }
         let farmLayer = activeLayers.farmLayer;
-        if (!farmLayer || !farmLayer._geojsonData) {
-            alert('Farm data not available. Please select a farm year to load it.');
-            return;
-        }
+        if (!farmLayer || !farmLayer._geojsonData) { alert('Farm data not available. Please select a farm year to load it.'); return; }
         let protectedLayer = activeLayers.protectedAreas;
-        if (!protectedLayer || !protectedLayer._geojsonData) {
-            alert('Protected areas data not available.');
-            return;
-        }
+        if (!protectedLayer || !protectedLayer._geojsonData) { alert('Protected areas data not available.'); return; }
         let forestLayer = null;
         if (forestYear) {
             forestLayer = activeLayers.forestLayer;
-            if (!forestLayer || !forestLayer._geojsonData) {
-                alert(`Forest data for ${forestYear} not available.`);
-                return;
-            }
+            if (!forestLayer || !forestLayer._geojsonData) { alert(`Forest data for ${forestYear} not available.`); return; }
         }
         const farmData = farmLayer._geojsonData;
         const protectedData = protectedLayer._geojsonData;
@@ -955,6 +579,10 @@
         });
         const percentProtected = totalFarmArea > 0 ? (areaInProtected / totalFarmArea * 100).toFixed(2) : 0;
         const percentForest = totalFarmArea > 0 ? (areaInForest / totalFarmArea * 100).toFixed(2) : 0;
+
+        // store for dashboard
+        lastEncroachmentData = { totalFarmArea, areaInProtected, areaInForest, percentProtected, percentForest };
+
         document.getElementById('encroachmentStats').innerHTML = `
             <p><strong>Total Farm Area:</strong> ${totalFarmArea.toFixed(2)} ha</p>
             <p><strong>Encroachment into Protected Areas:</strong> ${areaInProtected.toFixed(2)} ha (${percentProtected}%)</p>
@@ -970,182 +598,77 @@
                     label: 'Encroached Area (ha)',
                     data: [areaInProtected, areaInForest],
                     backgroundColor: ['#ff6600', '#4DAF4A'],
-                    borderColor: ['#cc5500', '#2e7d32'],
-                    borderWidth: 1
                 }]
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                scales: { y: { beginAtZero: true, title: { display: true, text: 'Hectares' } } },
-                plugins: { legend: { position: 'top' }, tooltip: { callbacks: { label: (ctx) => `${ctx.raw.toFixed(2)} ha` } } }
-            }
+            options: { responsive: true, maintainAspectRatio: true, scales: { y: { beginAtZero: true } } }
         });
-        const dialog = document.getElementById('encroachmentDialog');
-        dialog.style.display = 'block';
-        if (!dialog.style.left || dialog.style.left === 'auto') {
-            dialog.style.left = '50%';
-            dialog.style.transform = 'translateX(-50%)';
-        }
+        document.getElementById('encroachmentDialog').style.display = 'block';
         const msg = `⚠️ Farm encroachment: ${areaInProtected.toFixed(2)} ha into protected areas (${percentProtected}%), ${areaInForest.toFixed(2)} ha into forest (${percentForest}%).`;
         showNotification(msg);
+        refreshOfficerDashboard();
     }
 
-    function showNotification(msg) {
-        if (Notification.permission === 'granted') {
-            new Notification('Lupane Monitor', { body: msg });
-        } else if (Notification.permission !== 'denied') {
-            Notification.requestPermission().then(perm => {
-                if (perm === 'granted') new Notification('Lupane Monitor', { body: msg });
-            });
-        }
-        notificationCount++;
-        document.getElementById('notifBadge').innerText = notificationCount;
-    }
-
-    // Graphs
-    let farmlandChart, forestChart, waterChart, pieChart, barChart;
-    async function loadAndRenderGraphs() {
-        try {
-            const response = await fetch('lulc_stats.csv');
-            const csvText = await response.text();
-            const rows = csvText.trim().split('\n');
-            const years = [], farmland = [], forest = [], water = [], grassland = [], urban = [];
-            for (let i = 1; i < rows.length; i++) {
-                const cols = rows[i].split(',');
-                if (cols.length < 6) continue;
-                years.push(parseInt(cols[0]));
-                farmland.push(parseFloat(cols[1]));
-                forest.push(parseFloat(cols[2]));
-                water.push(parseFloat(cols[3]));
-                grassland.push(parseFloat(cols[4]));
-                urban.push(parseFloat(cols[5]));
-            }
-            if (farmlandChart) farmlandChart.destroy();
-            farmlandChart = new Chart(document.getElementById('farmlandExpansionChart'), {
-                type: 'line', data: { labels: years, datasets: [{ label: 'Farmland Area (ha)', data: farmland, borderColor: '#f9a825', fill: true }] },
-                options: { responsive: true, plugins: { title: { display: true, text: 'Farmland Expansion' } } }
-            });
-            if (forestChart) forestChart.destroy();
-            forestChart = new Chart(document.getElementById('forestLossChart'), {
-                type: 'line', data: { labels: years, datasets: [{ label: 'Forest Area (ha)', data: forest, borderColor: '#2e7d32', fill: true }] },
-                options: { responsive: true, plugins: { title: { display: true, text: 'Forest Cover Loss' } } }
-            });
-            if (waterChart) waterChart.destroy();
-            waterChart = new Chart(document.getElementById('waterChangeChart'), {
-                type: 'line', data: { labels: years, datasets: [{ label: 'Water Bodies (ha)', data: water, borderColor: '#1565c0', fill: true }] },
-                options: { responsive: true, plugins: { title: { display: true, text: 'Water Extent Change' } } }
-            });
-            const last = years.length-1;
-            if (pieChart) pieChart.destroy();
-            pieChart = new Chart(document.getElementById('landUsePieChart'), {
-                type: 'pie', data: { labels: ['Farmland','Forest','Grassland','Water','Urban'], datasets: [{ data: [farmland[last],forest[last],grassland[last],water[last],urban[last]], backgroundColor: ['#f9a825','#4DAF4A','#8bc34a','#1565c0','#c62828'] }] },
-                options: { responsive: true, plugins: { title: { display: true, text: `Land Use ${years[last]}` } } }
-            });
-            if (barChart) barChart.destroy();
-            barChart = new Chart(document.getElementById('barComparisonChart'), {
-                type: 'bar', data: { labels: years, datasets: [{ label: 'Farmland (ha)', data: farmland, backgroundColor: '#f9a825' }, { label: 'Forest (ha)', data: forest, backgroundColor: '#4DAF4A' }] },
-                options: { responsive: true, plugins: { title: { display: true, text: 'Farmland vs Forest' } }, scales: { y: { beginAtZero: true } } }
-            });
-        } catch(err) { console.warn('CSV error', err); }
-    }
-
-    async function exportToPDF() {
-        const { jsPDF } = window.jspdf;
-        const element = document.getElementById('mapContainer');
-        const originalOverflow = element.style.overflow;
-        element.style.overflow = 'visible';
-        try {
-            const canvas = await html2canvas(element, { scale: 2, useCORS: true });
-            const imgData = canvas.toDataURL('image/png');
-            const pdf = new jsPDF('landscape', 'mm', 'a4');
-            const imgWidth = 297, imgHeight = (canvas.height * imgWidth) / canvas.width;
-            pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-            pdf.save('lupane_map_report.pdf');
-        } catch(err) { alert('PDF export failed'); } finally { element.style.overflow = originalOverflow; }
-    }
-
+    // ==================== DRAGGABLE DIALOG ====================
     function makeDraggable(dialogEl, handleSelector) {
         const handle = dialogEl.querySelector(handleSelector);
         let startX, startY, initialLeft, initialTop, startMouseX, startMouseY;
         handle.addEventListener('mousedown', (e) => {
             e.preventDefault();
-            startMouseX = e.clientX;
-            startMouseY = e.clientY;
+            startMouseX = e.clientX; startMouseY = e.clientY;
             const rect = dialogEl.getBoundingClientRect();
-            initialLeft = rect.left;
-            initialTop = rect.top;
-            startX = initialLeft;
-            startY = initialTop;
+            initialLeft = rect.left; initialTop = rect.top;
+            startX = initialLeft; startY = initialTop;
             document.addEventListener('mousemove', onMouseMove);
             document.addEventListener('mouseup', onMouseUp);
         });
         function onMouseMove(e) {
-            const dx = e.clientX - startMouseX;
-            const dy = e.clientY - startMouseY;
-            let left = startX + dx;
-            let top = startY + dy;
-            left = Math.min(window.innerWidth - dialogEl.offsetWidth - 10, Math.max(10, left));
-            top = Math.min(window.innerHeight - dialogEl.offsetHeight - 10, Math.max(10, top));
-            dialogEl.style.left = left + 'px';
-            dialogEl.style.top = top + 'px';
-            dialogEl.style.transform = 'none';
+            const dx = e.clientX - startMouseX; const dy = e.clientY - startMouseY;
+            let left = Math.min(window.innerWidth - dialogEl.offsetWidth - 10, Math.max(10, startX + dx));
+            let top = Math.min(window.innerHeight - dialogEl.offsetHeight - 10, Math.max(10, startY + dy));
+            dialogEl.style.left = left + 'px'; dialogEl.style.top = top + 'px'; dialogEl.style.transform = 'none';
         }
-        function onMouseUp() {
-            document.removeEventListener('mousemove', onMouseMove);
-            document.removeEventListener('mouseup', onMouseUp);
-        }
+        function onMouseUp() { document.removeEventListener('mousemove', onMouseMove); document.removeEventListener('mouseup', onMouseUp); }
     }
 
+    // ==================== INIT MAP ====================
     function initMap() {
         map = L.map('map').setView([-18.92, 27.55], 10);
-        currentBaseLayer = osmLayer;
-        currentBaseLayer.addTo(map);
+        currentBaseLayer = osmLayer; currentBaseLayer.addTo(map);
         document.querySelector('input[value="map"]').addEventListener('change', () => switchBaseLayer('map'));
         document.querySelector('input[value="satellite"]').addEventListener('change', () => switchBaseLayer('satellite'));
 
-        // Fallback boundary
+        // ---- boundaries ----
         const fallbackBoundary = L.polygon([
             [27.40,-18.80],[27.65,-18.80],[27.70,-18.90],
             [27.65,-19.05],[27.40,-19.05],[27.35,-18.95],[27.40,-18.80]
         ], { color: '#e63946', weight: 4, fillOpacity: 0, dashArray: '8,8' }).addTo(map);
-        fallbackBoundary.bindPopup("Lupane District (fallback)");
         activeLayers.lupaneDistrict = fallbackBoundary;
-        activeLayers.lupaneDistrictFallback = true;
 
         fetch('LUPANE BOUNDARY DISTRICT.geojson')
             .then(r => r.json())
             .then(data => {
                 map.removeLayer(fallbackBoundary);
-                const realBoundary = L.geoJSON(data, { style: { color: '#060509', weight: 3, fillOpacity: 0 }, onEachFeature: (f,l) => l.bindPopup(f.properties.DISTRICT || 'Lupane') });
+                const realBoundary = L.geoJSON(data, { style: { color: '#060509', weight: 3, fillOpacity: 0 } });
                 activeLayers.lupaneDistrict = realBoundary;
-                delete activeLayers.lupaneDistrictFallback;
                 realBoundary.addTo(map);
                 updateLegend();
-            })
-            .catch(() => console.warn("Using fallback boundary"));
+            }).catch(() => console.warn("Using fallback boundary"));
 
         function loadOtherGeoJSON(name, url, style, popupField='name') {
-            fetch(url)
-                .then(r => r.ok ? r.json() : Promise.reject(`HTTP ${r.status}`))
-                .then(data => {
-                    if (activeLayers[name]) map.removeLayer(activeLayers[name]);
-                    const layer = L.geoJSON(data, { style: style, onEachFeature: (f,l) => { if (f.properties) l.bindPopup(f.properties[popupField] || name); } });
-                    layer._geojsonData = data;
-                    activeLayers[name] = layer;
-                    layer.addTo(map);
-                    console.log(`✅ ${name} loaded`);
-                    updateLegend();
-                })
-                .catch(err => console.error(`❌ Could not load ${name}:`, err));
+            fetch(url).then(r => r.ok ? r.json() : Promise.reject()).then(data => {
+                if (activeLayers[name]) map.removeLayer(activeLayers[name]);
+                const layer = L.geoJSON(data, { style: style, onEachFeature: (f,l) => { if (f.properties) l.bindPopup(f.properties[popupField] || name); } });
+                layer._geojsonData = data; activeLayers[name] = layer; layer.addTo(map); updateLegend();
+            }).catch(err => console.warn(`Could not load ${name}:`, err));
         }
 
         loadOtherGeoJSON('nationalParks', 'NATIONAL PARKS.geojson', { color: '#ff6600', weight: 2, fillOpacity: 0.3 });
         loadOtherGeoJSON('protectedAreas', 'PROTECTED AREAS WITHIN LUPANE.geojson', { color: '#00ced1', weight: 2, fillOpacity: 0.3 });
         loadOtherGeoJSON('rivers', 'RIVERS.geojson', { color: '#1e88e5', weight: 2, fillOpacity: 0 });
-        loadOtherGeoJSON('roads', 'ROADS.geojson', { color: '#DB1E2A', weight: 2, dashArray: '4,12', lineCap: 'round' });
+        loadOtherGeoJSON('roads', 'ROADS.geojson', { color: '#DB1E2A', weight: 2, dashArray: '4,12' });
         loadOtherGeoJSON('dams', 'DAM.geojson', { color: '#232323', weight: 1, fillColor: '#0000FF', fillOpacity: 0.8 }, 'DAM_NAME');
 
+        // dropdowns
         document.getElementById('lulcDropdown').onchange = (e) => {
             const val = e.target.value;
             if (val === '2010') loadLulcPng('2010', 'LAND USE LAND COVER 2010.png');
@@ -1157,66 +680,32 @@
 
         const farmDropdown = document.getElementById('farmDropdown');
         farmDropdown.onchange = () => {
-            const year = farmDropdown.value;
-            removeLayerIfExists('farmLayer');
+            const year = farmDropdown.value; removeLayerIfExists('farmLayer');
             if (year) {
-                const fileName = `FARMS_${year}.geojson`;
-                fetch(fileName)
-                    .then(r => r.ok ? r.json() : Promise.reject(`HTTP ${r.status}`))
-                    .then(data => {
-                        if (activeLayers.farmLayer) map.removeLayer(activeLayers.farmLayer);
-                        const layer = L.geoJSON(data, {
-                            style: farmStyle,
-                            onEachFeature: (f, l) => {
-                                let props = f.properties;
-                                let content = `<b>Farm Boundaries ${year}</b><br>`;
-                                if (props.Name) content += `Name: ${props.Name}<br>`;
-                                if (props.AREA) content += `Area: ${props.AREA} ha<br>`;
-                                l.bindPopup(content);
-                            }
-                        });
-                        layer._geojsonData = data;
-                        activeLayers.farmLayer = layer;
-                        layer.addTo(map);
-                        updateLegend();
-                    })
-                    .catch(err => console.warn(`Could not load ${fileName}:`, err));
+                fetch(`FARMS_${year}.geojson`).then(r => r.ok ? r.json() : Promise.reject()).then(data => {
+                    if (activeLayers.farmLayer) map.removeLayer(activeLayers.farmLayer);
+                    const layer = L.geoJSON(data, { style: farmStyle, onEachFeature: (f,l) => l.bindPopup(`<b>Farm ${year}</b>`) });
+                    layer._geojsonData = data; activeLayers.farmLayer = layer; layer.addTo(map); updateLegend();
+                }).catch(err => console.warn(`Could not load FARMS_${year}.geojson`));
             }
         };
 
         const forestDropdown = document.getElementById('forestDropdown');
         forestDropdown.onchange = () => {
-            const year = forestDropdown.value;
-            removeLayerIfExists('forestLayer');
+            const year = forestDropdown.value; removeLayerIfExists('forestLayer');
             if (year) {
-                const fileName = `FOREST_${year}.geojson`;
-                fetch(fileName)
-                    .then(r => r.ok ? r.json() : Promise.reject(`HTTP ${r.status}`))
-                    .then(data => {
-                        if (activeLayers.forestLayer) map.removeLayer(activeLayers.forestLayer);
-                        const layer = L.geoJSON(data, {
-                            style: forestStyle,
-                            onEachFeature: (f, l) => {
-                                let props = f.properties;
-                                let content = `<b>Forest ${year}</b><br>`;
-                                if (props.Name) content += `Name: ${props.Name}<br>`;
-                                if (props.AREA) content += `Area: ${props.AREA} ha<br>`;
-                                l.bindPopup(content);
-                            }
-                        });
-                        layer._geojsonData = data;
-                        activeLayers.forestLayer = layer;
-                        layer.addTo(map);
-                        updateLegend();
-                    })
-                    .catch(err => console.warn(`Could not load ${fileName}:`, err));
+                fetch(`FOREST_${year}.geojson`).then(r => r.ok ? r.json() : Promise.reject()).then(data => {
+                    if (activeLayers.forestLayer) map.removeLayer(activeLayers.forestLayer);
+                    const layer = L.geoJSON(data, { style: forestStyle, onEachFeature: (f,l) => l.bindPopup(`<b>Forest ${year}</b>`) });
+                    layer._geojsonData = data; activeLayers.forestLayer = layer; layer.addTo(map); updateLegend();
+                }).catch(err => console.warn(`Could not load FOREST_${year}.geojson`));
             }
         };
 
+        // toggle buttons
         function toggleLayer(name) {
             if (!activeLayers[name]) { alert(`Layer ${name} not loaded`); return; }
-            if (map.hasLayer(activeLayers[name])) map.removeLayer(activeLayers[name]);
-            else map.addLayer(activeLayers[name]);
+            if (map.hasLayer(activeLayers[name])) map.removeLayer(activeLayers[name]); else map.addLayer(activeLayers[name]);
             updateLegend();
         }
         document.getElementById('lupaneDistrictBtn').onclick = () => toggleLayer('lupaneDistrict');
@@ -1225,159 +714,104 @@
         document.getElementById('riversBtn').onclick = () => toggleLayer('rivers');
         document.getElementById('roadsBtn').onclick = () => toggleLayer('roads');
         document.getElementById('damsBtn').onclick = () => toggleLayer('dams');
-
         document.getElementById('encroachBtn').onclick = calculateEncroachmentIntegrated;
-        document.getElementById('closeEncroachDialog').onclick = () => {
-            document.getElementById('encroachmentDialog').style.display = 'none';
-        };
+        document.getElementById('closeEncroachDialog').onclick = () => document.getElementById('encroachmentDialog').style.display = 'none';
 
-        const encroachDialog = document.getElementById('encroachmentDialog');
-        makeDraggable(encroachDialog, '.dialog-header');
+        makeDraggable(document.getElementById('encroachmentDialog'), '.dialog-header');
 
+        // update legend (simplified)
         window.updateLegend = function() {
             const legendDiv = document.getElementById('legendPanel');
             let content = '';
-            const t = translations[currentLanguage];
-            if (currentLulcLayer && map.hasLayer(currentLulcLayer)) {
-                content += `<strong>${t.legendLULC}</strong><br>
-                    <p><span style="background:#2311e7;"></span> ${t.legendWater}</p>
-                    <p><span style="background:#3ea017;"></span> ${t.legendCrop}</p>
-                    <p><span style="background:#031305;"></span> ${t.legendBuiltup}</p>
-                    <p><span style="background:#151201;"></span> ${t.legendRocky}</p>
-                    <p><span style="background:#8e6d20;"></span> ${t.legendBare}</p>
-                    <p><span style="background:#04410a;"></span> ${t.legendForest}</p>
-                    <p><span style="background:#c4af10;"></span> ${t.legendRoads}</p><hr>`;
-            }
-            if (activeLayers.farmLayer && map.hasLayer(activeLayers.farmLayer)) {
-                content += `<strong>${t.legendFarm}</strong><br><p><span style="background:#fff633;"></span> ${t.legendFarmDesc}</p><hr>`;
-            }
-            if (activeLayers.forestLayer && map.hasLayer(activeLayers.forestLayer)) {
-                content += `<strong>${t.legendForestLayer}</strong><br><p>🌳 <span style="background:#4DAF4A;"></span> ${t.legendForestDesc}</p><hr>`;
-            }
-            if (activeLayers.lupaneDistrict && map.hasLayer(activeLayers.lupaneDistrict)) content += `<strong>${t.legendLupane}</strong><br><p><span style="background:#060509;"></span> ${t.legendLupaneDesc}</p><hr>`;
-            if (activeLayers.nationalParks && map.hasLayer(activeLayers.nationalParks)) content += `<strong>${t.legendNationalParks}</strong><br><p><span style="background:#ff6600;"></span> ${t.legendNationalParksDesc}</p><hr>`;
-            if (activeLayers.protectedAreas && map.hasLayer(activeLayers.protectedAreas)) content += `<strong>${t.legendProtectedAreas}</strong><br><p><span style="background:#00ced1;"></span> ${t.legendProtectedAreasDesc}</p><hr>`;
-            if (activeLayers.rivers && map.hasLayer(activeLayers.rivers)) content += `<strong>${t.legendRivers}</strong><br><p><span style="background:#1e88e5;"></span> ${t.legendRiversDesc}</p><hr>`;
-            if (activeLayers.roads && map.hasLayer(activeLayers.roads)) content += `<strong>${t.legendRoads}</strong><br><p><span style="background:#DB1E2A;"></span> ${t.legendRoadsDesc}</p><hr>`;
-            if (activeLayers.dams && map.hasLayer(activeLayers.dams)) content += `<strong>${t.legendDams}</strong><br><p><span style="background:#0000FF;"></span> ${t.legendDamsDesc}</p><hr>`;
-            if (content) { legendDiv.innerHTML = content; legendDiv.style.display = 'block'; }
-            else legendDiv.style.display = 'none';
+            if (currentLulcLayer && map.hasLayer(currentLulcLayer)) content += `<strong>LAND COVER</strong><br>Water/Crop/Builtup/Rocky/Bare/Forest/Roads<hr>`;
+            if (activeLayers.farmLayer && map.hasLayer(activeLayers.farmLayer)) content += `<strong>FARMS</strong><br>Yellow with brown edge<hr>`;
+            if (activeLayers.forestLayer && map.hasLayer(activeLayers.forestLayer)) content += `<strong>FOREST</strong><br>Solid green<hr>`;
+            if (activeLayers.lupaneDistrict && map.hasLayer(activeLayers.lupaneDistrict)) content += `<strong>LUPANE BOUNDARY</strong><br>Black outline<hr>`;
+            if (content) { legendDiv.innerHTML = content; legendDiv.style.display = 'block'; } else legendDiv.style.display = 'none';
         };
 
+        // map click for LULC popup
         map.on('click', function(e) {
             if (currentLulcLayer && map.hasLayer(currentLulcLayer)) {
                 const legendContent = document.getElementById('legendPanel').innerHTML;
-                if (legendContent && legendContent.trim() !== '') {
-                    L.popup()
-                        .setLatLng(e.latlng)
-                        .setContent(`<div style="max-width:250px; background:rgba(0,0,0,0.8); color:white; padding:8px; border-radius:6px;">${legendContent}</div>`)
-                        .openOn(map);
-                }
+                if (legendContent) L.popup().setLatLng(e.latlng).setContent(`<div style="max-width:250px;background:rgba(0,0,0,0.8);color:white;padding:8px;border-radius:6px;">${legendContent}</div>`).openOn(map);
             }
         });
 
-        // Conflict reporting
-        let conflictPoints = [];
-        function updateHeatmap() {
-            if (heatLayer) map.removeLayer(heatLayer);
-            heatLayer = L.heatLayer(conflictPoints, { radius: 25, blur: 15 });
-            heatLayer.addTo(map);
-        }
-        function addConflictReport(lat, lng, desc, rating) {
-            let intensity = rating==='low'?0.3 : rating==='moderate'?0.6 : rating==='high'?0.8 : 1.0;
-            conflictPoints.push([lat, lng, intensity]);
-            updateHeatmap();
-            L.marker([lat, lng]).addTo(map).bindPopup(`<b>Conflict Report</b><br>${desc}<br>Rating: ${rating}`);
-            showNotification(`New conflict report: ${desc} (${rating})`);
-        }
-
-        const reportPanel = document.getElementById('reportPanel');
-        const dragHandle = reportPanel.querySelector('.panel-header');
-        let offsetX, offsetY, startX, startY;
-        dragHandle.addEventListener('mousedown', (e) => {
-            e.preventDefault();
-            startX = e.clientX; startY = e.clientY;
-            offsetX = reportPanel.offsetLeft; offsetY = reportPanel.offsetTop;
-            document.addEventListener('mousemove', onMouseMove);
-            document.addEventListener('mouseup', onMouseUp);
-        });
-        function onMouseMove(e) {
-            let left = offsetX + (e.clientX - startX);
-            let top = offsetY + (e.clientY - startY);
-            left = Math.min(window.innerWidth - reportPanel.offsetWidth - 10, Math.max(10, left));
-            top = Math.min(window.innerHeight - reportPanel.offsetHeight - 10, Math.max(10, top));
-            reportPanel.style.left = left + 'px';
-            reportPanel.style.right = 'auto';
-            reportPanel.style.top = top + 'px';
-            reportPanel.style.bottom = 'auto';
-        }
-        function onMouseUp() { document.removeEventListener('mousemove', onMouseMove); document.removeEventListener('mouseup', onMouseUp); }
-
-        const reportIcon = document.getElementById('reportIcon');
-        const closeReport = document.getElementById('closeReportBtn');
-        const coordsSpan = document.getElementById('coordsDisplay');
-        let tempMarker = null;
-        function setLocation(lat, lng) {
-            currentSelectedLocation = { lat, lng };
-            coordsSpan.innerText = `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`;
-            if (tempMarker) map.removeLayer(tempMarker);
-            tempMarker = L.marker([lat, lng]).addTo(map).bindPopup('Report location').openPopup();
-        }
-        document.getElementById('getLocationBtn').onclick = () => {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(pos => setLocation(pos.coords.latitude, pos.coords.longitude), () => alert('Geolocation failed'));
-            } else alert('Not supported');
-        };
-        document.getElementById('pickMapBtn').onclick = () => {
-            pickingActive = true;
-            map.getContainer().style.cursor = 'crosshair';
-            alert('Click on map to select location');
-        };
-        map.on('click', (e) => {
-            if (pickingActive) { setLocation(e.latlng.lat, e.latlng.lng); pickingActive = false; map.getContainer().style.cursor = ''; }
-        });
-        document.getElementById('submitReportBtn').onclick = () => {
-            let desc = document.getElementById('reportDesc').value;
-            let damage = document.getElementById('damageSelect').value;
-            if (!desc || !damage) { alert('Fill description and damage level.'); return; }
-            if (!currentSelectedLocation) { alert('Select location.'); return; }
-            addConflictReport(currentSelectedLocation.lat, currentSelectedLocation.lng, desc, damage);
-            alert('Report submitted!');
-            document.getElementById('reportDesc').value = '';
-            document.getElementById('damageSelect').value = '';
-            currentSelectedLocation = null;
-            coordsSpan.innerText = 'No location selected';
-            if (tempMarker) map.removeLayer(tempMarker);
-            tempMarker = null;
-            reportPanel.style.display = 'none';
-        };
-        reportIcon.onclick = () => {
-            reportPanel.style.display = 'block';
-            if (!reportPanel.style.left) { reportPanel.style.right = '20px'; reportPanel.style.bottom = '80px'; reportPanel.style.left = 'auto'; reportPanel.style.top = 'auto'; }
-        };
-        closeReport.onclick = () => reportPanel.style.display = 'none';
-
+        // UI buttons
         document.getElementById('notifyIcon').onclick = () => { notificationCount = 0; document.getElementById('notifBadge').innerText = '0'; };
-        document.getElementById('menuIcon').onclick = () => { const panel = document.getElementById('layerControl'); panel.style.display = panel.style.display === 'none' ? 'block' : 'none'; };
-        document.getElementById('graphsIcon').onclick = () => { const panel = document.getElementById('graphsPanel'); panel.style.display = panel.style.display === 'none' ? 'block' : 'none'; if (panel.style.display === 'block') loadAndRenderGraphs(); };
+        document.getElementById('menuIcon').onclick = () => { const p = document.getElementById('layerControl'); p.style.display = p.style.display === 'block' ? 'none' : 'block'; };
+        document.getElementById('graphsIcon').onclick = () => { const p = document.getElementById('graphsPanel'); p.style.display = p.style.display === 'block' ? 'none' : 'block'; if (p.style.display === 'block') loadAndRenderGraphs(); };
         document.getElementById('closeGraphsBtn').onclick = () => document.getElementById('graphsPanel').style.display = 'none';
-        document.getElementById('exportPdfIcon').onclick = exportToPDF;
+        document.getElementById('exportPdfIcon').onclick = () => {
+            const { jsPDF } = window.jspdf;
+            html2canvas(document.getElementById('mapContainer')).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const pdf = new jsPDF('landscape', 'mm', 'a4');
+                const imgWidth = 297, imgHeight = (canvas.height * imgWidth) / canvas.width;
+                pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+                pdf.save('lupane_officer_report.pdf');
+            }).catch(() => alert('PDF export failed'));
+        };
 
-        // Language switcher
-        const langSelect = document.getElementById('languageSelect');
-        langSelect.addEventListener('change', (e) => {
+        // language minimal
+        document.getElementById('languageSelect').addEventListener('change', (e) => {
             currentLanguage = e.target.value;
-            updateUILanguage(currentLanguage);
-            updateLegend();
-            // Also update graph titles if they exist (they are in the panel, already translated via HTML)
-            // No need to reload charts because their data is independent.
+            document.getElementById('mapTitle').innerText = translations[currentLanguage]?.mapTitle || 'LUPANE OFFICER DASHBOARD';
         });
-        // Set initial language
-        currentLanguage = 'en';
-        updateUILanguage('en');
 
-        updateHeatmap();
+        // load initial layer data
         map.fitBounds([[-19.05,27.35],[-18.80,27.70]]);
+
+        // officer dashboard initial refresh
+        refreshOfficerDashboard();
+
+        // ========== DEMO: pre-populate some reports for officer ==========
+        setTimeout(() => {
+            // add sample conflict reports
+            if (conflictReports.length === 0) {
+                addConflictReport(-18.95, 27.45, "Elephant damaged maize field near homestead", "high");
+                addConflictReport(-18.88, 27.60, "Lion spotted near livestock pen", "very high");
+                addConflictReport(-18.92, 27.38, "Crop raiding by bush pigs", "moderate");
+            }
+        }, 800);
+    }
+
+    // ==================== GRAPHS LOADER (simplified) ====================
+    async function loadAndRenderGraphs() {
+        try {
+            const response = await fetch('lulc_stats.csv');
+            const csvText = await response.text();
+            const rows = csvText.trim().split('\n');
+            const years = [], farmland = [], forest = [], water = [], grassland = [], urban = [];
+            for (let i = 1; i < rows.length; i++) {
+                const cols = rows[i].split(',');
+                if (cols.length < 6) continue;
+                years.push(parseInt(cols[0])); farmland.push(parseFloat(cols[1])); forest.push(parseFloat(cols[2]));
+                water.push(parseFloat(cols[3])); grassland.push(parseFloat(cols[4])); urban.push(parseFloat(cols[5]));
+            }
+            const last = years.length-1;
+            if (window.farmlandChart) window.farmlandChart.destroy();
+            window.farmlandChart = new Chart(document.getElementById('farmlandExpansionChart'), {
+                type: 'line', data: { labels: years, datasets: [{ label: 'Farmland (ha)', data: farmland, borderColor: '#f9a825' }] }
+            });
+            if (window.forestChart) window.forestChart.destroy();
+            window.forestChart = new Chart(document.getElementById('forestLossChart'), {
+                type: 'line', data: { labels: years, datasets: [{ label: 'Forest (ha)', data: forest, borderColor: '#2e7d32' }] }
+            });
+            if (window.waterChart) window.waterChart.destroy();
+            window.waterChart = new Chart(document.getElementById('waterChangeChart'), {
+                type: 'line', data: { labels: years, datasets: [{ label: 'Water (ha)', data: water, borderColor: '#1565c0' }] }
+            });
+            if (window.pieChart) window.pieChart.destroy();
+            window.pieChart = new Chart(document.getElementById('landUsePieChart'), {
+                type: 'pie', data: { labels: ['Farmland','Forest','Grassland','Water','Urban'], datasets: [{ data: [farmland[last],forest[last],grassland[last],water[last],urban[last]], backgroundColor: ['#f9a825','#4DAF4A','#8bc34a','#1565c0','#c62828'] }] }
+            });
+            if (window.barChart) window.barChart.destroy();
+            window.barChart = new Chart(document.getElementById('barComparisonChart'), {
+                type: 'bar', data: { labels: years, datasets: [{ label: 'Farmland', data: farmland, backgroundColor: '#f9a825' }, { label: 'Forest', data: forest, backgroundColor: '#4DAF4A' }] }
+            });
+        } catch(err) { console.warn('CSV error', err); }
     }
 </script>
 </body>
